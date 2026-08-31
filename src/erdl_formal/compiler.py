@@ -31,13 +31,16 @@ from .tvl import (
     tvl_eq,
     tvl_gt,
     tvl_gte,
+    tvl_in,
     tvl_length,
     tvl_lt,
     tvl_lte,
     tvl_ne,
     tvl_not,
     tvl_or,
+    tvl_add,
     tvl_starts_with,
+    tvl_sub,
     str_def,
     val_bool,
 )
@@ -130,6 +133,14 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_ends_with(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "length":
             return tvl_length(compile_expr(expr[1], ctx))
+        if op == "in":
+            x = compile_expr(expr[1], ctx)
+            members = [compile_expr(m, ctx) for m in expr[2]]
+            return tvl_in(x, members)
+        if op == "add":
+            return tvl_add(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op == "sub":
+            return tvl_sub(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op in ("all", "any", "none"):
             return _quantifier(op, expr[1], ctx)
         raise NotImplementedError(f"op {op!r} not in POC subset")

@@ -178,3 +178,29 @@ def tvl_ends_with(s, t):
 def tvl_length(s):
     """length（Unicode 码点；Z3 字符串为 8-bit 序列，非 ASCII 时码点/字节有差异）。"""
     return If(is_missing_str(s), TVLInt.Missing, TVLInt.Def(Length(val_str(s))))
+
+
+# --- 集合（in）+ 线性算术（add/sub，精确）---
+
+def tvl_in(x, members):
+    """x ∈ members（有限集合，标量成员）；x Missing → Def(false)."""
+    return TVLBool.Def(
+        If(is_missing_int(x), False, Or(*[val_int(x) == val_int(m) for m in members]))
+    )
+
+
+def _arith_binary(a, b, op):
+    """线性定点算术（scale 统一，加减精确）；任一 Missing → Missing."""
+    return If(
+        Or(is_missing_int(a), is_missing_int(b)),
+        TVLInt.Missing,
+        TVLInt.Def(op(val_int(a), val_int(b))),
+    )
+
+
+def tvl_add(a, b):
+    return _arith_binary(a, b, lambda x, y: x + y)
+
+
+def tvl_sub(a, b):
+    return _arith_binary(a, b, lambda x, y: x - y)
