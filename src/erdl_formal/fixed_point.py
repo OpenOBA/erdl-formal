@@ -1,0 +1,81 @@
+"""Fixed-point decimal semantics (E2): scale=14 + half-even rounding.
+
+Spec v2.0 §10.4(b) + E2:
+- intermediate computation uses high-precision bounded rationals (128-bit num/den)
+- ONLY output nodes round to scale=14 + half-even (banker's rounding)
+- serialization uses minimal representation (§28.2)
+
+This is the *reference semantics* (exact rational) that the SMT model
+(QF_LIA linear / QF_NRA nonlinear) is validated against via counterexample replay.
+"""
+
+from fractions import Fraction
+
+SCALE = 14
+_SCALE_FACTOR = 10 ** SCALE
+
+
+def parse(s: str) -> Fraction:
+    """Parse a decimal string → exact Fraction.
+
+    Rejects scientific notation (spec §28.2 minimal representation forbids it).
+    """
+    if "e" in s.lower() or "E" in s:
+        raise ValueError(f"non-minimal: scientific notation: {s!r}")
+    return Fraction(s)
+
+
+def to_scale14_half_even(v: Fraction) -> Fraction:
+    """Round an exact rational to scale=14, half-even (banker's rounding).
+
+    Uses exact integer arithmetic — no floating point, no Decimal round-trip.
+    """
+    scaled = v * _SCALE_FACTOR
+    floor = scaled.numerator // scaled.denominator
+    rem = scaled.numerator - floor * scaled.denominator
+    if rem * 2 == scaled.denominator:
+        # exactly halfway → round to even
+        rounded = floor if floor % 2 == 0 else floor + 1
+    elif rem * 2 < scaled.denominator:
+        rounded = floor
+    else:
+        rounded = floor + 1
+    return Fraction(rounded, _SCALE_FACTOR)
+
+
+def serialize(v: Fraction) -> str:
+    """Serialize in minimal representation (§28.2): no trailing zeros, integer
+    part without decimal point. Exact (no float, no format-precision default)."""
+    n, d = v.numerator, v.denominator
+    sign = "-" if n < 0 else ""
+    n = abs(n)
+    int_part, rem = divmod(n, d)
+    if rem == 0:
+        return sign + str(int_part)
+    digits = []
+    while rem != 0:
+        rem *= 10
+        q, rem = divmod(rem, d)
+        digits.append(str(q))
+        if len(digits) > 100:  # safety cap (non-terminating must not be serialized)
+            raise ValueError(f"non-terminating decimal: {v}")
+    frac = "".join(digits).rstrip("0")
+    return f"{sign}{int_part}.{frac}" if frac else f"{sign}{int_part}"
+
+
+def add(a: Fraction, b: Fraction) -> Fraction:
+    return a + b
+
+
+def sub(a: Fraction, b: Fraction) -> Fraction:
+    return a - b
+
+
+def mul(a: Fraction, b: Fraction) -> Fraction:
+    return a * b
+
+
+def div(a: Fraction, b: Fraction) -> Fraction:
+    if b == 0:
+        raise ZeroDivisionError("division by zero (E3 → eval_warnings → E12 fold)")
+    return a / b
