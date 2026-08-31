@@ -1,6 +1,6 @@
-"""Phase 1 — G3「涉密访问控制」: file_classification > operator_classification → DENY.
+"""G3 classification access control: file_classification > operator_classification → DENY.
 
-This demonstrates the two halves of the POC goal:
+This demonstrates the two halves of the verification goal:
 1. **Guarded property**: with the schema premise (both fields present), the rule
    fires (→ DENY) exactly when file_cls > operator_cls.
 2. **Field-missing bypass (counterexample)**: without the schema premise, a
@@ -51,7 +51,7 @@ def test_g3_guarded_never_fires_when_lower_or_equal():
 def test_g3_field_missing_bypass():
     """operator_classification Missing → comparison collapses False → never fires.
 
-    This is the POC's canonical counterexample: the 'always-denies' property is
+    This is the canonical counterexample: the 'always-denies' property is
     FALSE without the schema premise that operator_classification exists.
     """
     file_cls = TVLInt.Def(Int("file_cls"))

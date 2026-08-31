@@ -78,7 +78,8 @@ def tvl_date_part(unit, epoch):
 
 
 def tvl_month_last_day(epoch):
-    """month_last_day: 当月最后一日（erdl endOfMonth → 完整日期 = 该日 epoch ms）。"""
+    """month_last_day: last day of the month as a full date (erdl endOfMonth),
+    returned as that day's epoch ms."""
 
     def body():
         y, m, _ = civil_from_days(_z(epoch))

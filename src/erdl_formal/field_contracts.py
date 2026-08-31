@@ -4,7 +4,7 @@ Spec v2.0 has ``EntityFieldContract`` (field/display_name/type/description)
 for **rule production**, but no *verification* schema (no cardinality bound).
 This module is the **verification schema** (schema-as-assumption): field type +
 cardinality + optionality, which grounds quantifier/aggregate index expansion
-(see `docs/schema-assumption.md` + `docs/plan.md` §9).
+(see `docs/field-contracts.md`).
 """
 
 from dataclasses import dataclass, field

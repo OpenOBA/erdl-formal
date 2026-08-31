@@ -1,6 +1,6 @@
 """ERDL-specific properties via the rule resolution reference model.
 
-override-soundness / ring-respect / emergency-shortcut (plan §2, v6 — with the
+override-soundness / ring-respect / emergency-shortcut (with the
 ring-respect CORRECTION discovered from evaluator.ts).
 """
 

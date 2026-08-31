@@ -1,9 +1,9 @@
-"""Symbolic compiler (M3): ERDL S-expression → Z3 TVL.
+"""Symbolic compiler: ERDL S-expression → Z3 TVL.
 
 Compiles the expression tree to Z3 three-valued logic, following the
-denotational semantics (`docs/semantics.md`). Covers the POC subset:
+denotational semantics (`docs/semantics.md`). Covers the supported subset:
 field / literal / and / or / not / comparison / exists / quantifier.
-Arithmetic / string / time / aggregate are M3.1+.
+Arithmetic / string / time / aggregate are also encoded.
 
 S-expression form (aligned with the erdl external form):
   ["field", "path"] · ["lit", value] · ["and", a, b] · ["or", a, b] ·
@@ -66,8 +66,8 @@ class CompileContext:
         if type_name == "string":
             return TVLStr
         raise NotImplementedError(
-            f"field type {type_name!r} not in POC subset (int/bool/string); "
-            "rational/array need M3.1"
+            f"field type {type_name!r} not in the supported subset (int/bool/string); "
+            "rational/array need cardinality support"
         )
 
     def field(self, path):
@@ -163,7 +163,7 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_date_add(expr[1], compile_expr(expr[2], ctx), compile_expr(expr[3], ctx))
         if op in ("all", "any", "none"):
             return _quantifier(op, expr[1], ctx)
-        raise NotImplementedError(f"op {op!r} not in POC subset")
+        raise NotImplementedError(f"op {op!r} not in the supported subset")
     # bare literal
     return _lit(expr)
 

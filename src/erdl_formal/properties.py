@@ -1,9 +1,9 @@
-"""Property verification (M3): satisfiability + counterexample.
+"""Property verification: satisfiability + counterexample.
 
-Properties (plan §2): never-errors, always-allows, always-denies, subsumption,
+Properties: never-errors, always-allows, always-denies, subsumption,
 equivalence, disjointness + ERDL-specific override-soundness / ring-respect /
-emergency-shortcut. The POC subset provides the canonical satisfiability check
-`can_fire`, from which the first properties are derived.
+emergency-shortcut. The supported subset provides the canonical satisfiability
+check `can_fire`, from which the first properties are derived.
 """
 
 from z3 import Not, Solver, sat

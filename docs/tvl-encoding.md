@@ -1,7 +1,6 @@
-# 三值逻辑 SMT 编码规范（草案）
+# 三值逻辑 SMT 编码规范
 
-> 状态：草案（已实现于 `erdl_formal/tvl.py`，Phase 2 测试覆盖）
-> 依据：erdl-spec-v2.0 §10.2 E11/E12 · 审查意见 `docs/findings.md` P0-3
+> 依据：erdl-spec-v2.0 §10.2 E11/E12
 
 ## 1. 编码载体
 
@@ -32,7 +31,7 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 
 ## 5. 决策：叶子折叠（非 Kleene）
 
-本编码采用**叶子折叠**（规范 E11「字段缺失统一返回 false」），**不是 Kleene 传播**。依据（调研定案，见 findings.md P0-3）：
+本编码采用**叶子折叠**（规范 E11「字段缺失统一返回 false」），**不是 Kleene 传播**。依据（erdl-spec-v2.0 §10.2 E11）：
 
 | 模型 | `not(缺失)` | 定位 | 对 Guard 场景 |
 |---|---|---|---|

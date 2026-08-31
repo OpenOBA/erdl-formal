@@ -1,4 +1,4 @@
-"""M5 汇合（日历）：erdl-formal calendar SMT vs erdl-vectors V-ENGINE 冻结向量."""
+"""Cross-check: erdl-formal calendar SMT vs erdl-vectors V-ENGINE frozen vectors."""
 
 import json
 import os

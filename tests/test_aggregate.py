@@ -1,4 +1,4 @@
-"""M3.1 — aggregate (count/sum) over a fixed-length array."""
+"""Aggregate (count/sum) over a fixed-length array."""
 
 from z3 import simplify
 

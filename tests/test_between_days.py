@@ -1,4 +1,4 @@
-"""M3.1 additions — between (闭区间) + days_between (时间戳层)."""
+"""Between (closed interval) + days_between (timestamp layer)."""
 
 from z3 import is_false, is_true, simplify
 

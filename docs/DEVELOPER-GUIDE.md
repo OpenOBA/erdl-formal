@@ -81,7 +81,7 @@ if op == "between":
     return tvl_between(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx), compile_expr(expr[3], ctx))
 ```
 
-**Step 3 — 写测试**（`tests/test_m31.py`）：
+**Step 3 — 写测试**（`tests/test_between_days.py`）：
 
 ```python
 def test_between_in_range():

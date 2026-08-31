@@ -1,4 +1,4 @@
-"""M3.1 — string group (TVLString + contains/starts_with/ends_with/length)."""
+"""String group (TVLString + contains/starts_with/ends_with/length)."""
 
 from z3 import is_false, is_true, simplify
 

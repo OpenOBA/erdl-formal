@@ -1,9 +1,8 @@
 # 指称语义（Denotational Semantics）· 34 节点内核
 
-> 状态：草案（M2）
 > 依据：erdl-spec-v2.0 §10 · 本仓 `tvl.py` / `quantifiers.py` / `fixed_point.py`
 
-本文定义 ERDL 表达式内核 34 节点的**指称语义**——每个节点的「输入 → 输出」数学函数。它是 M3 符号编译器（ERDL → SMT-LIB）的编码依据，也是反例回放的判定基准。
+本文定义 ERDL 表达式内核 34 节点的**指称语义**——每个节点的「输入 → 输出」数学函数。它是符号编译器（ERDL → SMT-LIB）的编码依据，也是反例回放的判定基准。
 
 ## 1. 值域（Value Domain）
 
@@ -71,7 +70,7 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 
 ### 时间（5）
 
-`epoch_ms` / `days_between` = 整数时间戳 / `floor(差/86400000)`（UTC）；`date_add` / `date_part` / `month_last_day` = 格里高利历（UTC，日历层，SMT 规避）。
+`epoch_ms` / `days_between` = 整数时间戳 / `floor(差/86400000)`（UTC）；`date_add` / `date_part` / `month_last_day` = 格里高利历（UTC，civil 算法）。
 
 ### 聚合（1）
 
@@ -92,4 +91,4 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 
 ## 4. 决策：叶子折叠（非 Kleene）
 
-本语义采用**叶子折叠**（E11「字段缺失统一返回 false」），非 Kleene 传播。依据见 `docs/tvl-encoding.md` §5 + `docs/findings.md` P0-3。
+本语义采用**叶子折叠**（E11「字段缺失统一返回 false」），非 Kleene 传播。依据见 `docs/tvl-encoding.md` §5。

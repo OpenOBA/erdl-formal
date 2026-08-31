@@ -1,4 +1,4 @@
-"""M3.1 — in (集合成员) + add/sub (线性定点算术)."""
+"""In (set membership) + add/sub (linear fixed-point arithmetic)."""
 
 from z3 import is_false, is_true, simplify
 

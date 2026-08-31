@@ -1,4 +1,4 @@
-"""M3.1 — calendar (date_part / month_last_day / date_add) + civil algorithm sanity."""
+"""Calendar (date_part / month_last_day / date_add) + civil algorithm sanity."""
 
 from datetime import datetime, timezone
 

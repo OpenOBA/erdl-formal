@@ -1,8 +1,8 @@
-"""M5 汇合：erdl-formal 参考语义 vs erdl-vectors V-ENGINE 冻结向量.
+"""Cross-check: erdl-formal reference semantics vs erdl-vectors V-ENGINE frozen vectors.
 
 Validates `fixed_point.py` (scale=14 + half-even + exact rational) against the
 frozen V-ENGINE arithmetic vectors — the "formal model == frozen runtime vector"
-convergence (plan §11.6).
+convergence.
 
 Note: JSON numbers are parsed with `parse_float=str` so `0.1` stays the exact
 decimal "0.1" (1/10), not an IEEE-754 float.

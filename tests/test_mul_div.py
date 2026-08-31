@@ -1,4 +1,5 @@
-"""M3.1 — mul/div/round（非线性定点算术 + half-even 舍入），并与 fixed_point 参考交叉验证."""
+"""Mul/div/round (nonlinear fixed-point arithmetic + half-even rounding),
+    cross-checked against the fixed_point reference."""
 
 from z3 import simplify
 

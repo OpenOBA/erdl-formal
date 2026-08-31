@@ -113,11 +113,10 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 ## 文档
 
-- `docs/DELIVERY-REPORT.md` — 交付汇总（里程碑 / 34 节点矩阵 / 交叉验证 / 踩坑）
 - `docs/semantics.md` — 34 节点指称语义
 - `docs/tvl-encoding.md` — 三值逻辑 SMT 编码规范
-- `docs/field-contracts.md` + `docs/schema-assumption.md` — 验证 schema 契约
-- `docs/plan.md` / `docs/findings.md` / `docs/audit-upgrades.md` — 方案 / 审查 / 规范审计
+- `docs/field-contracts.md` — 验证 schema 契约
+- `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API）
 
 ## 许可证
 

@@ -1,4 +1,4 @@
-"""Phase 2 — 量词 all（空数组折叠 + 索引展开）+ 三值逻辑 AND.
+"""Quantifier all (empty-array collapse + index expansion) + three-valued AND.
 
 Rule: "所有审批人均已批准 → ALLOW" (all approvers approved → ALLOW).
 """

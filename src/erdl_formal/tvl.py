@@ -7,8 +7,8 @@ therefore **two-valued** — they only ever see collapsed booleans.
 
 Encoding: ADT ``TVL(τ) = Def(value: τ) | Missing``.
 
-This is the spec-accurate model (NOT Kleene propagation — see the findings
-document for the research that settled this).
+This is the spec-accurate model (NOT Kleene propagation; leaf collapse per
+spec v2.0 §10.2 E11).
 """
 
 from z3 import (
@@ -184,7 +184,7 @@ def tvl_length(s):
 
 
 def tvl_match(s, pattern):
-    """match（安全正则）；literal 精确匹配（full regex 语法需正则解析器，M3.1 后）。"""
+    """match: literal exact match (full regex syntax needs a regex parser)."""
     return TVLBool.Def(If(is_missing_str(s), False, InRe(val_str(s), Re(pattern))))
 
 
@@ -219,14 +219,14 @@ def tvl_sub(a, b):
 def tvl_aggregate(fn, elements):
     """aggregate over a fixed-length array. fn in {count, sum}.
 
-    count(空)=0（len=0）；sum(空)=0（Sum([])=0）。avg/min/max 空数组折叠 false，
-    需 None 类型，M3.1 暂不做。
+    count([])=0 (len=0); sum([])=0 (Sum([])=0). avg/min/max over empty fold to
+    false; they need a None type (not yet supported).
     """
     if fn == "count":
         return TVLInt.Def(len(elements))
     if fn == "sum":
         return TVLInt.Def(Sum([val_int(e) for e in elements]))
-    raise NotImplementedError(f"aggregate {fn!r} not in POC subset (avg/min/max need None folding)")
+    raise NotImplementedError(f"aggregate {fn!r} not yet supported (avg/min/max need None folding)")
 
 
 # --- 非线性定点算术（mul/div，QF_NIA + half-even 舍入）---

@@ -1,4 +1,4 @@
-"""M3 end-to-end: S-expression → symbolic compile → property verification."""
+"""End-to-end: S-expression → symbolic compile → property verification."""
 
 from erdl_formal.field_contracts import FieldContract, Schema
 from erdl_formal.properties import always_denies, can_fire

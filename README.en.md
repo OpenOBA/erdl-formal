@@ -113,11 +113,10 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 
 ## Documentation
 
-- `docs/DELIVERY-REPORT.md` — delivery summary (milestones / 34-node matrix / cross-checks / pitfalls)
 - `docs/semantics.md` — denotational semantics for all 34 nodes
 - `docs/tvl-encoding.md` — three-valued logic SMT encoding
-- `docs/field-contracts.md` + `docs/schema-assumption.md` — verification schema contracts
-- `docs/plan.md` / `docs/findings.md` / `docs/audit-upgrades.md` — plan / review / spec audit
+- `docs/field-contracts.md` — verification schema contracts
+- `docs/DEVELOPER-GUIDE.md` — developer guide (architecture / adding nodes / properties / API)
 
 ## License
 
