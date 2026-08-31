@@ -128,4 +128,4 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 ## 许可证
 
-MIT · © 2026 深圳市秒镜科技有限公司
+Apache-2.0 · © 2026 深圳市秒镜科技有限公司

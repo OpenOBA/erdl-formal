@@ -58,4 +58,4 @@ issue for security findings.
 
 ## License
 
-MIT. By contributing, you agree your contribution is licensed under MIT.
+MIT. By contributing, you agree your contribution is licensed under Apache-2.0.

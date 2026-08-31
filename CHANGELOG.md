@@ -35,3 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - unreleased
 
 Initial release (pre-publication).
+
+### Changed
+
+- License: MIT → Apache-2.0 (explicit patent grant; aligns with the Cedar/OPA
+  policy-verification ecosystem).
