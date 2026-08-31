@@ -47,7 +47,7 @@ def test_eq_missing_collapses_false():
 
 
 def test_ne_missing_collapses_false():
-    # note: ne ALSO collapses to false on missing (E11: 除 exists 外统一 false)
+    # note: ne ALSO collapses to false on missing (E11: everything except exists collapses to false)
     assert is_false(simplify(_b(tvl_ne(TVLInt.Def(5), TVLInt.Missing))))
 
 

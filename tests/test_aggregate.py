@@ -13,7 +13,7 @@ def test_count():
 
 
 def test_count_empty():
-    assert simplify(val_int(tvl_aggregate("count", []))).as_long() == 0  # count(空)=0
+    assert simplify(val_int(tvl_aggregate("count", []))).as_long() == 0  # count([])=0
 
 
 def test_sum():
@@ -22,7 +22,7 @@ def test_sum():
 
 
 def test_sum_empty():
-    assert simplify(val_int(tvl_aggregate("sum", []))).as_long() == 0  # sum(空)=0
+    assert simplify(val_int(tvl_aggregate("sum", []))).as_long() == 0  # sum([])=0
 
 
 def test_compiler_aggregate_sum_gt():

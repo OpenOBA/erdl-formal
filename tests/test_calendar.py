@@ -61,16 +61,16 @@ def test_date_part_year():
 
 
 def test_date_part_day_of_week():
-    # 2026-01-01 是周四 → 4（1=周一...7=周日）
+    # 2026-01-01 is Thursday → 4 (1=Monday...7=Sunday)
     assert _val(tvl_date_part("day_of_week", TVLInt.Def(epoch_ms("2026-01-01")))) == 4
 
 
 def test_month_last_day_leap():
-    # month_last_day("2024-02-15") = 完整日期 "2024-02-29"（erdl endOfMonth）
+    # month_last_day("2024-02-15") = full date "2024-02-29" (erdl endOfMonth)
     assert _val(tvl_month_last_day(TVLInt.Def(epoch_ms("2024-02-15")))) == epoch_ms("2024-02-29")
 
 
 def test_date_add_months_clamp():
-    # 2026-01-31 + 1 month → 2026-02-28（月末回退）
+    # 2026-01-31 + 1 month → 2026-02-28 (month-end clamp)
     got = _val(tvl_date_add("months", TVLInt.Def(epoch_ms("2026-01-31")), TVLInt.Def(1 * 10 ** 14)))
     assert got == epoch_ms("2026-02-28")

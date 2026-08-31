@@ -1,6 +1,6 @@
 """Quantifier all (empty-array collapse + index expansion) + three-valued AND.
 
-Rule: "所有审批人均已批准 → ALLOW" (all approvers approved → ALLOW).
+Rule: "all approvers approved → ALLOW".
 """
 
 from z3 import Bool, Int, Not, Solver, is_false, is_true, sat, simplify, unsat

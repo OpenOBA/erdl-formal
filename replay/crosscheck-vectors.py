@@ -77,7 +77,7 @@ def main():
         else:
             print(f"  ❌ {v['id']}: got {got_s} expected {exp['value']}")
 
-    print(f"算术向量交叉验证: {passed}/{total} 一致")
+    print(f"Arithmetic vector cross-check: {passed}/{total} consistent")
     return 0 if passed == total else 1
 
 

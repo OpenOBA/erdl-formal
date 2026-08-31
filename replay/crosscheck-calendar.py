@@ -62,7 +62,7 @@ def main():
         else:
             print(f"  ❌ {v['id']}: got {got} expected {expected}")
 
-    print(f"日历向量交叉验证: {passed}/{total} 一致")
+    print(f"Calendar vector cross-check: {passed}/{total} consistent")
     return 0 if passed == total else 1
 
 

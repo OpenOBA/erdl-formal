@@ -136,10 +136,10 @@ def tvl_not(a):
     return TVLBool.Def(Not(val_bool(a)))
 
 
-# --- 存在/量纲 + 时间戳层（Int）---
+# --- existence/dimension + timestamp layer (Int) ---
 
 def tvl_between(x, a, b):
-    """闭区间 [a, b]（仅数值）；任一 Missing → Def(False)."""
+    """Closed interval [a, b] (numeric only); any Missing → Def(False)."""
     return TVLBool.Def(
         If(
             Or(is_missing_int(x), is_missing_int(a), is_missing_int(b)),
@@ -150,7 +150,7 @@ def tvl_between(x, a, b):
 
 
 def tvl_days_between(t1, t2):
-    """UTC 天数差：floor((t2−t1)/86400000)（erdl 语义 = to − from）；任一 Missing → Missing。"""
+    """UTC day difference: floor((t2−t1)/86400000) (erdl semantics = to − from); any Missing → Missing."""
     return If(
         Or(is_missing_int(t1), is_missing_int(t2)),
         TVLInt.Missing,
@@ -158,7 +158,7 @@ def tvl_days_between(t1, t2):
     )
 
 
-# --- 字符串（contains/starts_with/ends_with + length）---
+# --- string (contains/starts_with/ends_with + length) ---
 
 def _collapse_str_binary(a, b, op):
     return TVLBool.Def(
@@ -179,7 +179,7 @@ def tvl_ends_with(s, t):
 
 
 def tvl_length(s):
-    """length（Unicode 码点；Z3 字符串为 8-bit 序列，非 ASCII 时码点/字节有差异）。"""
+    """length (Unicode code points; Z3 strings are 8-bit sequences, code points/bytes differ for non-ASCII)."""
     return If(is_missing_str(s), TVLInt.Missing, TVLInt.Def(Length(val_str(s))))
 
 
@@ -188,17 +188,17 @@ def tvl_match(s, pattern):
     return TVLBool.Def(If(is_missing_str(s), False, InRe(val_str(s), Re(pattern))))
 
 
-# --- 集合（in）+ 线性算术（add/sub，精确）---
+# --- set (in) + linear arithmetic (add/sub, exact) ---
 
 def tvl_in(x, members):
-    """x ∈ members（有限集合，标量成员）；x Missing → Def(false)."""
+    """x ∈ members (finite set, scalar members); x Missing → Def(false)."""
     return TVLBool.Def(
         If(is_missing_int(x), False, Or(*[val_int(x) == val_int(m) for m in members]))
     )
 
 
 def _arith_binary(a, b, op):
-    """线性定点算术（scale 统一，加减精确）；任一 Missing → Missing."""
+    """Linear fixed-point arithmetic (unified scale, exact add/sub); any Missing → Missing."""
     return If(
         Or(is_missing_int(a), is_missing_int(b)),
         TVLInt.Missing,
@@ -214,7 +214,7 @@ def tvl_sub(a, b):
     return _arith_binary(a, b, lambda x, y: x - y)
 
 
-# --- 聚合（count/sum，空数组折叠）---
+# --- aggregate (count/sum, empty-array collapse) ---
 
 def tvl_aggregate(fn, elements):
     """aggregate over a fixed-length array. fn in {count, sum}.
@@ -229,20 +229,20 @@ def tvl_aggregate(fn, elements):
     raise NotImplementedError(f"aggregate {fn!r} not yet supported (avg/min/max need None folding)")
 
 
-# --- 非线性定点算术（mul/div，QF_NIA + half-even 舍入）---
+# --- nonlinear fixed-point arithmetic (mul/div, QF_NIA + half-even rounding) ---
 
 _SCALE = 10 ** 14
 
 
 def _round_half_even_div(num, den):
-    """round_half_even(num / den)，num/den 为 Z3 Int（floor div + 欧几里得 mod）。"""
+    """round_half_even(num / den), num/den are Z3 Ints (floor div + Euclidean mod)."""
     q = num / den
     r = num % den
     return If(2 * r < den, q, If(2 * r > den, q + 1, If(q % 2 == 0, q, q + 1)))
 
 
 def tvl_mul(a, b):
-    """定点乘法：round_half_even(a_scaled * b_scaled / 10^14)；Missing → Missing."""
+    """Fixed-point multiply: round_half_even(a_scaled * b_scaled / 10^14); Missing → Missing."""
     return If(
         Or(is_missing_int(a), is_missing_int(b)),
         TVLInt.Missing,
@@ -251,7 +251,7 @@ def tvl_mul(a, b):
 
 
 def tvl_div(a, b):
-    """定点除法：round_half_even(a_scaled * 10^14 / b_scaled)；除零/Missing → Missing."""
+    """Fixed-point divide: round_half_even(a_scaled * 10^14 / b_scaled); divide-by-zero/Missing → Missing."""
     return If(
         Or(is_missing_int(a), is_missing_int(b), val_int(b) == 0),
         TVLInt.Missing,
@@ -260,7 +260,7 @@ def tvl_div(a, b):
 
 
 def tvl_round(a):
-    """round 节点：half-even 舍入到整数（erdl toDecimalString(scale=0)），结果回 scale=14。"""
+    """round node: half-even rounding to integer (erdl toDecimalString(scale=0)), result back at scale=14."""
     return If(
         is_missing_int(a),
         TVLInt.Missing,

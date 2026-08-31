@@ -12,7 +12,7 @@ _SCALE = 10 ** 14
 
 
 def _scaled(decimal_str):
-    """decimal string → scaled int（value * 10^14 的整数；Fraction 会约分，须用乘法而非 .numerator）"""
+    """decimal string → scaled int (integer of value * 10^14; Fraction auto-reduces, so use multiplication not .numerator)"""
     return int(parse(decimal_str) * _SCALE)
 
 
@@ -45,7 +45,7 @@ def test_round_half_even():
 
 
 def test_mul_div_crosscheck_reference():
-    """SMT mul/div 逐例 = fixed_point 参考语义（scale=14 + half-even）."""
+    """SMT mul/div per-case = fixed_point reference semantics (scale=14 + half-even)."""
     cases = [("0.1", "0.2"), ("0.1", "0.1"), ("1.5", "2.5"), ("0.3", "0.7"), ("0.125", "0.5")]
     for a_s, b_s in cases:
         ref = int(to_scale14_half_even(ref_mul(parse(a_s), parse(b_s))) * _SCALE)
