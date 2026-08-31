@@ -1,0 +1,58 @@
+"""M3.1 additions — between (闭区间) + days_between (时间戳层)."""
+
+from z3 import is_false, is_true, simplify
+
+from erdl_formal.field_contracts import FieldContract, Schema
+from erdl_formal.properties import can_fire
+from erdl_formal.tvl import (
+    TVLInt,
+    is_missing_int,
+    tvl_between,
+    tvl_days_between,
+    val_bool,
+    val_int,
+)
+
+
+# --- between ---
+
+
+def test_between_in_range():
+    assert is_true(simplify(val_bool(tvl_between(TVLInt.Def(5), TVLInt.Def(3), TVLInt.Def(10)))))
+
+
+def test_between_out_of_range():
+    assert is_false(simplify(val_bool(tvl_between(TVLInt.Def(20), TVLInt.Def(3), TVLInt.Def(10)))))
+
+
+def test_between_missing_collapses_false():
+    assert is_false(simplify(val_bool(tvl_between(TVLInt.Def(5), TVLInt.Missing, TVLInt.Def(10)))))
+
+
+# --- days_between ---
+
+
+def test_days_between_exact_day():
+    r = tvl_days_between(TVLInt.Def(86400000), TVLInt.Def(0))
+    assert simplify(val_int(r)).as_long() == 1
+
+
+def test_days_between_negative_floor():
+    # -1 hour → floor → -1 day (spec §10.5 负差值向负无穷取整)
+    r = tvl_days_between(TVLInt.Def(0), TVLInt.Def(3600000))
+    assert simplify(val_int(r)).as_long() == -1
+
+
+def test_days_between_missing_is_missing():
+    r = tvl_days_between(TVLInt.Missing, TVLInt.Def(0))
+    assert is_true(simplify(is_missing_int(r)))
+
+
+# --- compiler integration ---
+
+
+def test_compiler_between():
+    s = Schema()
+    s.add(FieldContract(field="amount", type="int"))
+    expr = ["between", ["field", "amount"], ["lit", 100], ["lit", 500]]
+    assert can_fire(expr, s, premises=["amount"]) is True
