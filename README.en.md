@@ -128,4 +128,4 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 
 ## License
 
-Apache-2.0 · © 2026 Shenzhen Miaojing Technology Co., Ltd.
+Apache-2.0 · © 2026 深圳市秒镜科技有限公司 (Shenzhen Miaojing Technology Co., Ltd.)
