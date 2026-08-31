@@ -14,12 +14,16 @@
 
 """TVL (E11) direct unit tests — leaf-collapse semantics, exhaustive per-op."""
 
+import pytest
+
 from z3 import is_false, is_true, simplify
 
 from erdl_formal.tvl import (
     TVLBool,
     TVLInt,
     exists_int,
+    is_missing_bool,
+    tvl_aggregate,
     tvl_and,
     tvl_eq,
     tvl_gt,
@@ -118,3 +122,13 @@ def test_not_of_missing_comparison_is_true():
     # not(gt(5, Missing)) = not(False) = True  (collapse, then two-valued not)
     r = tvl_not(tvl_gt(TVLInt.Def(5), TVLInt.Missing))
     assert is_true(simplify(_b(r)))
+
+
+def test_is_missing_bool():
+    assert is_true(simplify(is_missing_bool(TVLBool.Missing)))
+    assert is_false(simplify(is_missing_bool(TVLBool.Def(True))))
+
+
+def test_aggregate_unsupported_fn_raises():
+    with pytest.raises(NotImplementedError):
+        tvl_aggregate("avg", [])

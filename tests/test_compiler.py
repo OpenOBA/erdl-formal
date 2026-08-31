@@ -14,6 +14,11 @@
 
 """End-to-end: S-expression → symbolic compile → property verification."""
 
+import pytest
+
+from z3 import is_expr
+
+from erdl_formal.compiler import CompileContext, compile_expr
 from erdl_formal.field_contracts import FieldContract, Schema
 from erdl_formal.properties import always_denies, can_fire
 
@@ -81,3 +86,115 @@ def test_exists_compile():
     expr = ["exists", ["field", "file_cls"]]
     assert can_fire(expr, s, premises=["file_cls"]) is True
     assert can_fire(expr, s, missing=["file_cls"]) is False
+
+
+# --- compiler op dispatch coverage (S-expression → Z3) ---
+
+
+def _int_schema(*fields):
+    s = Schema()
+    for f in fields:
+        s.add(FieldContract(field=f, type="int"))
+    return s
+
+
+def _string_schema(*fields):
+    s = Schema()
+    for f in fields:
+        s.add(FieldContract(field=f, type="string"))
+    return s
+
+
+def _compile(expr, schema):
+    return compile_expr(expr, CompileContext(schema))
+
+
+def test_compile_and():
+    s = _int_schema("a", "b")
+    expr = ["and", ["gt", ["field", "a"], ["lit", 0]], ["lt", ["field", "b"], ["lit", 10]]]
+    assert can_fire(expr, s, premises=["a", "b"]) is True
+
+
+def test_compile_or():
+    s = _int_schema("a", "b")
+    expr = ["or", ["eq", ["field", "a"], ["lit", 1]], ["eq", ["field", "b"], ["lit", 2]]]
+    assert can_fire(expr, s, premises=["a", "b"]) is True
+
+
+def test_compile_contains():
+    s = _string_schema("name")
+    assert can_fire(["contains", ["field", "name"], ["lit", "abc"]], s, premises=["name"]) is True
+
+
+def test_compile_ends_with():
+    s = _string_schema("name")
+    assert can_fire(["ends_with", ["field", "name"], ["lit", ".json"]], s, premises=["name"]) is True
+
+
+def test_compile_match():
+    s = _string_schema("name")
+    assert can_fire(["match", ["field", "name"], "read_file"], s, premises=["name"]) is True
+
+
+def test_compile_length():
+    s = _string_schema("name")
+    assert is_expr(_compile(["length", ["field", "name"]], s))
+
+
+def test_compile_sub():
+    s = _int_schema("a", "b")
+    assert is_expr(_compile(["sub", ["field", "a"], ["field", "b"]], s))
+
+
+def test_compile_round():
+    s = _int_schema("a")
+    assert is_expr(_compile(["round", ["field", "a"]], s))
+
+
+def test_compile_days_between():
+    s = _int_schema("t1", "t2")
+    assert is_expr(_compile(["days_between", ["field", "t1"], ["field", "t2"]], s))
+
+
+def test_compile_date_part():
+    s = _int_schema("t")
+    assert is_expr(_compile(["date_part", "year", ["field", "t"]], s))
+
+
+def test_compile_month_last_day():
+    s = _int_schema("t")
+    assert is_expr(_compile(["month_last_day", ["field", "t"]], s))
+
+
+def test_compile_date_add():
+    s = _int_schema("t", "n")
+    assert is_expr(_compile(["date_add", "days", ["field", "t"], ["field", "n"]], s))
+
+
+def test_compile_bool_literal():
+    s = _int_schema()
+    assert is_expr(_compile(["lit", True], s))
+    assert is_expr(_compile(True, s))  # bare literal (non-list) → _lit
+
+
+def test_compile_unknown_op_raises():
+    with pytest.raises(NotImplementedError):
+        _compile(["no_such_op", 1], _int_schema())
+
+
+def test_compile_unsupported_literal_raises():
+    with pytest.raises(NotImplementedError):
+        _compile(["lit", 1.5], _int_schema())
+
+
+def test_compile_unsupported_field_type_raises():
+    s = Schema()
+    s.add(FieldContract(field="ratio", type="rational"))
+    with pytest.raises(NotImplementedError):
+        _compile(["field", "ratio"], s)
+
+
+def test_premise_bool_field():
+    s = Schema()
+    s.add(FieldContract(field="flag", type="bool"))
+    assert can_fire(["field", "flag"], s, premises=["flag"]) is True

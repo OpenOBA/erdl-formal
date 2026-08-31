@@ -14,6 +14,8 @@
 
 """Calendar (date_part / month_last_day / date_add) + civil algorithm sanity."""
 
+import pytest
+
 from datetime import datetime, timezone
 
 from z3 import is_false, is_true, simplify
@@ -88,3 +90,24 @@ def test_date_add_months_clamp():
     # 2026-01-31 + 1 month → 2026-02-28 (month-end clamp)
     got = _val(tvl_date_add("months", TVLInt.Def(epoch_ms("2026-01-31")), TVLInt.Def(1 * 10 ** 14)))
     assert got == epoch_ms("2026-02-28")
+
+
+def test_date_add_days():
+    got = _val(tvl_date_add("days", TVLInt.Def(epoch_ms("2026-01-01")), TVLInt.Def(1 * 10 ** 14)))
+    assert got == epoch_ms("2026-01-02")
+
+
+def test_date_add_hours():
+    got = _val(tvl_date_add("hours", TVLInt.Def(epoch_ms("2026-01-01T00:00:00")), TVLInt.Def(24 * 10 ** 14)))
+    assert got == epoch_ms("2026-01-02T00:00:00")
+
+
+def test_date_add_years_leap_clamp():
+    # 2024-02-29 + 1 year → 2025-02-28 (non-leap clamp)
+    got = _val(tvl_date_add("years", TVLInt.Def(epoch_ms("2024-02-29")), TVLInt.Def(1 * 10 ** 14)))
+    assert got == epoch_ms("2025-02-28")
+
+
+def test_date_add_unsupported_unit_raises():
+    with pytest.raises(NotImplementedError):
+        tvl_date_add("seconds", TVLInt.Def(epoch_ms("2026-01-01")), TVLInt.Def(1 * 10 ** 14))

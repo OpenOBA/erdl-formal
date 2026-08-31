@@ -98,3 +98,18 @@ def test_serialize_large_integer():
 def test_div_rounding():
     assert serialize(to_scale14_half_even(div(Fraction(1, 1), Fraction(3, 1)))) == "0.33333333333333"
     assert serialize(div(Fraction(10, 1), Fraction(4, 1))) == "2.5"
+
+
+def test_scale14_half_even_round_up_above_half():
+    # 7 at the 15th decimal → more than halfway → round up (the `else` branch, not exact-half)
+    assert serialize(to_scale14_half_even(Fraction(7, 10 ** 15))) == "0.00000000000001"
+
+
+def test_serialize_non_terminating_raises():
+    # 1/3 has no terminating decimal form → safety cap raises
+    with pytest.raises(ValueError):
+        serialize(Fraction(1, 3))
+
+
+def test_sub_exact():
+    assert serialize(sub(Fraction(5, 1), Fraction(3, 1))) == "2"

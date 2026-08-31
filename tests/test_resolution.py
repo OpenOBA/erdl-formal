@@ -87,3 +87,15 @@ def test_multiple_deny_rules():
         _r("deny-b", "DENY", 20, ring=1),
     ]
     assert resolve(rules) == "DENY"
+
+
+def test_emergency_halt_non_root_ring_breaks():
+    # EMERGENCY_HALT at ring != 0 sets final then breaks (only ring 0 returns early)
+    rules = [_r("halt", "EMERGENCY_HALT", 10, ring=3)]
+    assert resolve(rules) == "EMERGENCY_HALT"
+
+
+def test_request_human_accumulates():
+    # non-ALLOW/DENY/HALT decision accumulates when nothing set yet
+    rules = [_r("human", "REQUEST_HUMAN", 10, ring=0)]
+    assert resolve(rules) == "REQUEST_HUMAN"

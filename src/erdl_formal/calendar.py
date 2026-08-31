@@ -67,10 +67,6 @@ def _z(epoch_ms):
     return val_int(epoch_ms) / DAY_MS
 
 
-def _wrap(body):
-    pass  # placeholder (see node functions below)
-
-
 def tvl_date_part(unit, epoch):
     """date_part{unit}: extract a UTC component from an epoch-ms timestamp."""
 
