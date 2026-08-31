@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "erdl-formal"
+version = "0.1.0"
+description = "ERDL Formal Verification — SMT-based static property verification for the ERDL expression kernel (34-node typed expression tree + E1–E12 evaluation constraints)."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "OpenOBA", email = "support@openoba.com" }]
+keywords = ["erdl", "formal-verification", "smt", "z3", "cvc5", "policy", "ai-agent", "deterministic"]
+dependencies = ["z3-solver>=4.13"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
