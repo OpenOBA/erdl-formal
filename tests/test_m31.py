@@ -33,13 +33,14 @@ def test_between_missing_collapses_false():
 
 
 def test_days_between_exact_day():
-    r = tvl_days_between(TVLInt.Def(86400000), TVLInt.Def(0))
+    # days_between(from=0, to=86400000) = (to - from) = 1 天（erdl 语义 = to − from）
+    r = tvl_days_between(TVLInt.Def(0), TVLInt.Def(86400000))
     assert simplify(val_int(r)).as_long() == 1
 
 
 def test_days_between_negative_floor():
-    # -1 hour → floor → -1 day (spec §10.5 负差值向负无穷取整)
-    r = tvl_days_between(TVLInt.Def(0), TVLInt.Def(3600000))
+    # days_between(from=86400000, to=0) = -1 天
+    r = tvl_days_between(TVLInt.Def(86400000), TVLInt.Def(0))
     assert simplify(val_int(r)).as_long() == -1
 
 

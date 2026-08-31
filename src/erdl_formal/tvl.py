@@ -17,11 +17,13 @@ from z3 import (
     Contains,
     Datatype,
     If,
+    InRe,
     IntSort,
     Length,
     Not,
     Or,
     PrefixOf,
+    Re,
     StringSort,
     StringVal,
     SuffixOf,
@@ -148,11 +150,11 @@ def tvl_between(x, a, b):
 
 
 def tvl_days_between(t1, t2):
-    """UTC 天数差：floor((t1−t2)/86400000)；任一 Missing → Missing（算术式折叠）。"""
+    """UTC 天数差：floor((t2−t1)/86400000)（erdl 语义 = to − from）；任一 Missing → Missing。"""
     return If(
         Or(is_missing_int(t1), is_missing_int(t2)),
         TVLInt.Missing,
-        TVLInt.Def((val_int(t1) - val_int(t2)) / 86400000),
+        TVLInt.Def((val_int(t2) - val_int(t1)) / 86400000),
     )
 
 
@@ -179,6 +181,11 @@ def tvl_ends_with(s, t):
 def tvl_length(s):
     """length（Unicode 码点；Z3 字符串为 8-bit 序列，非 ASCII 时码点/字节有差异）。"""
     return If(is_missing_str(s), TVLInt.Missing, TVLInt.Def(Length(val_str(s))))
+
+
+def tvl_match(s, pattern):
+    """match（安全正则）；literal 精确匹配（full regex 语法需正则解析器，M3.1 后）。"""
+    return TVLBool.Def(If(is_missing_str(s), False, InRe(val_str(s), Re(pattern))))
 
 
 # --- 集合（in）+ 线性算术（add/sub，精确）---
@@ -249,4 +256,13 @@ def tvl_div(a, b):
         Or(is_missing_int(a), is_missing_int(b), val_int(b) == 0),
         TVLInt.Missing,
         TVLInt.Def(_round_half_even_div(val_int(a) * _SCALE, val_int(b))),
+    )
+
+
+def tvl_round(a):
+    """round 节点：half-even 舍入到整数（erdl toDecimalString(scale=0)），结果回 scale=14。"""
+    return If(
+        is_missing_int(a),
+        TVLInt.Missing,
+        TVLInt.Def(_round_half_even_div(val_int(a), _SCALE) * _SCALE),
     )

@@ -1,13 +1,11 @@
-"""M3.1 — mul/div（非线性定点算术 + half-even 舍入），并与 fixed_point 参考交叉验证."""
-
-from fractions import Fraction
+"""M3.1 — mul/div/round（非线性定点算术 + half-even 舍入），并与 fixed_point 参考交叉验证."""
 
 from z3 import simplify
 
 from erdl_formal.fixed_point import div as ref_div
 from erdl_formal.fixed_point import mul as ref_mul
 from erdl_formal.fixed_point import parse, to_scale14_half_even
-from erdl_formal.tvl import TVLInt, tvl_div, tvl_mul, val_int
+from erdl_formal.tvl import TVLInt, tvl_div, tvl_mul, tvl_round, val_int
 
 _SCALE = 10 ** 14
 
@@ -36,6 +34,13 @@ def test_div_by_zero_is_missing():
     a = TVLInt.Def(_scaled("1"))
     b = TVLInt.Def(0)
     assert simplify(is_missing_int(tvl_div(a, b)))
+
+
+def test_round_half_even():
+    # round(2.5) → 2 (half-even), round(3.5) → 4, round(-2.5) → -2
+    assert simplify(val_int(tvl_round(TVLInt.Def(_scaled("2.5"))))).as_long() == _scaled("2")
+    assert simplify(val_int(tvl_round(TVLInt.Def(_scaled("3.5"))))).as_long() == _scaled("4")
+    assert simplify(val_int(tvl_round(TVLInt.Def(_scaled("-2.5"))))).as_long() == _scaled("-2")
 
 
 def test_mul_div_crosscheck_reference():

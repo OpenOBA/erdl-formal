@@ -43,3 +43,9 @@ def test_compiler_string_field():
     s.add(FieldContract(field="tool.name", type="string"))
     expr = ["starts_with", ["field", "tool.name"], ["lit", "read"]]
     assert can_fire(expr, s, premises=["tool.name"]) is True
+
+
+def test_match_literal():
+    from erdl_formal.tvl import tvl_match
+    assert is_true(simplify(val_bool(tvl_match(str_def("read_file"), "read_file"))))
+    assert is_false(simplify(val_bool(tvl_match(str_def("read_file"), "write"))))

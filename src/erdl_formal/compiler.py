@@ -42,9 +42,13 @@ from .tvl import (
     tvl_starts_with,
     tvl_sub,
     tvl_aggregate,
+    tvl_round,
+    tvl_match,
     str_def,
     val_bool,
 )
+
+from .calendar import tvl_date_add, tvl_date_part, tvl_month_last_day
 
 
 class CompileContext:
@@ -147,6 +151,16 @@ def compile_expr(expr, ctx: CompileContext):
             n = ctx.schema.cardinality(array_field)
             elems = [ctx.array_element(array_field, i) for i in range(n)]
             return tvl_aggregate(fn, elems)
+        if op == "round":
+            return tvl_round(compile_expr(expr[1], ctx))
+        if op == "match":
+            return tvl_match(compile_expr(expr[1], ctx), expr[2])
+        if op == "date_part":
+            return tvl_date_part(expr[1], compile_expr(expr[2], ctx))
+        if op == "month_last_day":
+            return tvl_month_last_day(compile_expr(expr[1], ctx))
+        if op == "date_add":
+            return tvl_date_add(expr[1], compile_expr(expr[2], ctx), compile_expr(expr[3], ctx))
         if op in ("all", "any", "none"):
             return _quantifier(op, expr[1], ctx)
         raise NotImplementedError(f"op {op!r} not in POC subset")
