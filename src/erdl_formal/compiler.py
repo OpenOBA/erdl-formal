@@ -42,7 +42,14 @@ class CompileContext:
         self._fields = {}
 
     def _sort(self, type_name):
-        return TVLBool if type_name == "bool" else TVLInt
+        if type_name == "bool":
+            return TVLBool
+        if type_name == "int":
+            return TVLInt
+        raise NotImplementedError(
+            f"field type {type_name!r} not in POC subset (int/bool); "
+            "string/rational/array need M3.1"
+        )
 
     def field(self, path):
         if path not in self._fields:

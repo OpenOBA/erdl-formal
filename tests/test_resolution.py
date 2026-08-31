@@ -49,3 +49,27 @@ def test_emergency_halt_short_circuits():
 
 def test_default_allow_when_nothing_matches():
     assert resolve([]) == "ALLOW"
+
+
+def test_priority_ordering_lower_number_wins():
+    rules = [
+        _r("p10-deny", "DENY", 10, ring=0),
+        _r("p20-allow", "ALLOW", 20, ring=0),
+    ]
+    assert resolve(rules) == "DENY"
+
+
+def test_same_ring_higher_priority_deny_overrides_allow():
+    rules = [
+        _r("allow", "ALLOW", 20, ring=0),
+        _r("deny", "DENY", 10, ring=0),
+    ]
+    assert resolve(rules) == "DENY"
+
+
+def test_multiple_deny_rules():
+    rules = [
+        _r("deny-a", "DENY", 10, ring=0),
+        _r("deny-b", "DENY", 20, ring=1),
+    ]
+    assert resolve(rules) == "DENY"

@@ -3,7 +3,7 @@
 Rule: "所有审批人均已批准 → ALLOW" (all approvers approved → ALLOW).
 """
 
-from z3 import Bool, Int, Not, Solver, sat, unsat
+from z3 import Bool, Int, Not, Solver, is_false, is_true, sat, simplify, unsat
 
 from erdl_formal.quantifiers import tvl_all
 from erdl_formal.tvl import (
@@ -64,3 +64,17 @@ def test_three_valued_and_leaf_collapse():
     s = Solver()
     s.add(val_bool(combined))
     assert s.check() == unsat
+
+
+def test_tvl_any_semantics():
+    from erdl_formal.quantifiers import tvl_any
+    assert is_false(simplify(val_bool(tvl_any([]))))  # E8: any([]) = False
+    one_true = [TVLBool.Def(True), TVLBool.Def(False)]
+    assert is_true(simplify(val_bool(tvl_any(one_true))))
+
+
+def test_tvl_none_semantics():
+    from erdl_formal.quantifiers import tvl_none
+    assert is_false(simplify(val_bool(tvl_none([]))))  # E8: none([]) = False
+    no_true = [TVLBool.Def(False), TVLBool.Def(False)]
+    assert is_true(simplify(val_bool(tvl_none(no_true))))

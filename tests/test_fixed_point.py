@@ -60,3 +60,27 @@ def test_arithmetic_exact_no_float_error():
 def test_division_by_zero_raises():
     with pytest.raises(ZeroDivisionError):
         div(Fraction(1, 1), Fraction(0, 1))
+
+
+def test_serialize_negative():
+    assert serialize(Fraction(-1, 2)) == "-0.5"
+    assert serialize(Fraction(-3, 1)) == "-3"
+
+
+def test_scale14_negative_half_even():
+    # -0.000000000000005 → round half-even toward even → 0
+    assert serialize(to_scale14_half_even(Fraction(-5, 10 ** 15))) == "0"
+
+
+def test_scale14_exact_14_decimals_no_rounding():
+    v = Fraction(12345678901234, 10 ** 14)  # 0.12345678901234
+    assert serialize(to_scale14_half_even(v)) == "0.12345678901234"
+
+
+def test_serialize_large_integer():
+    assert serialize(Fraction(10 ** 20, 1)) == "100000000000000000000"
+
+
+def test_div_rounding():
+    assert serialize(to_scale14_half_even(div(Fraction(1, 1), Fraction(3, 1)))) == "0.33333333333333"
+    assert serialize(div(Fraction(10, 1), Fraction(4, 1))) == "2.5"

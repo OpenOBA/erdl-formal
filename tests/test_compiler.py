@@ -54,3 +54,16 @@ def test_empty_approvers_fail_closed():
     s = Schema()
     s.add(FieldContract(field="approvers", type="array", element_type="bool", cardinality=0))
     assert can_fire(["all", "approvers"], s) is False
+
+
+def test_not_compile():
+    s = _g3_schema()
+    expr = ["not", ["gt", ["field", "file_cls"], ["field", "op_cls"]]]
+    assert can_fire(expr, s, premises=["file_cls", "op_cls"]) is True
+
+
+def test_exists_compile():
+    s = _g3_schema()
+    expr = ["exists", ["field", "file_cls"]]
+    assert can_fire(expr, s, premises=["file_cls"]) is True
+    assert can_fire(expr, s, missing=["file_cls"]) is False
