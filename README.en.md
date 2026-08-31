@@ -1,42 +1,74 @@
 # erdl-formal
 
-A **formal verifier** for the ERDL expression kernel — SMT (Z3) static property proofs. Not "we tested it", but "mathematically, no counterexample exists".
+**Determinism isn't tested. It's proven.**
 
-> ERDL is the deterministic rule language for enterprise AI agents (a 34-node typed expression tree + E1–E12 evaluation constraints). This repository answers one question: **does this rule, over *all* inputs, ever error, ever fail-open, or ever miss a block it should make?**
+erdl-formal is a **formal verifier** for the ERDL expression kernel: it compiles rules into SMT (Z3) and proves properties about them statically. Not "our tests pass" — "no counterexample exists, mathematically."
 
-## Why
+> ERDL is the deterministic rule language for enterprise AI agents (a 34-node typed expression tree + E1–E12 evaluation constraints). This repo answers one question: **over *all* inputs, does this rule ever error, ever fail open, or ever miss a block it should make?**
 
-LLMs are probabilistic; rule engines must be deterministic. Hand-written if/else + unit tests only prove the *tested* inputs. Formal verification lifts "determinism" from sampled testing to exhaustive proof — the same value Cedar Analysis delivers inside AWS, and the "always-true" guarantee regulated industries (finance / insurance / government) require from audits.
+## Why now: LLMs have brute force. They don't have direction.
 
-## Features
+LLMs are probabilistic: same input, different answers. Hand enterprise decisions to a probability distribution, and the auditors will eventually ask — *"on what basis was this decision made?"*
 
-- **All 34 nodes encoded**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate.
-- **Exact E1–E12 semantics**: E2 fixed-point scale=14 + half-even, E8 empty-array folding (anti-vacuous-truth), E11 three-valued logic (leaf collapse), E12 tier folding.
-- **Cedar's 6 properties + ERDL-specific**: never-errors / always-allows / always-denies / subsumption / equivalence / disjointness + override-soundness / ring-respect / emergency-shortcut.
-- **Independent verifier**: encodes the spec (`erdl-spec-v2.0`) with zero dependency on any ERDL engine — forming a three-way independent cross-check with `erdl` (TS engine) and `erdl-vectors` (frozen vectors).
+The industry is converging on an answer: **let the LLM understand; let a deterministic rule engine decide.** But a rule engine's "determinism" is usually underwritten by unit tests — and tests only prove the inputs you happened to write.
 
-## Quick start
+In regulated industries — finance, insurance, government — the audit question is singular:
+
+> **Does this rule hold for every input?**
+
+Sampled tests can't answer that. Only a proof can. Cedar Analysis proved this approach works inside AWS (Lean formalization + SMT symbolic analysis). erdl-formal does the same for the ERDL expression kernel — lifting determinism from **sampled testing** to **exhaustive proof**.
+
+**Same road as Cedar Analysis (formal policy analysis), different battlefield: we prove an enterprise rule kernel built for money, time, and decision objects.**
+
+## One proof in 30 seconds
+
+The G3 classification gate: file classification > operator classification → DENY. We want to prove the rule is both **reachable** and **fail-closed**:
 
 ```python
 from erdl_formal.field_contracts import FieldContract, Schema
 from erdl_formal.properties import always_denies
 
-# G3 classification check: file_cls > op_cls → DENY
 schema = Schema()
 schema.add(FieldContract(field="file_cls", type="int"))
 schema.add(FieldContract(field="op_cls", type="int"))
 
+# when: file_cls > op_cls  →  DENY
 rule = ["gt", ["field", "file_cls"], ["field", "op_cls"]]
 
-# proves two properties at once:
+# One assertion, two properties at once:
 # 1) reachable — with both fields present, a higher classification fires the block
-# 2) fail-closed — a missing operator classification does NOT open a bypass
+# 2) fail-closed — with op_cls missing, the comparison collapses to false (E11),
+#    and no permissive bypass can ever open
 assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_field="op_cls")
 ```
 
-## Guarantees (Measurements, not endorsements)
+No test cases. No sampling. Z3 searches the space of **all integers** for an input violating the property: if one exists, you get a **concrete, replayable counterexample** (re-checkable against the real engine); if not, UNSAT — the property holds for every input. QED.
 
-Three independent systems agree byte-for-byte:
+## What you can prove
+
+| Property | Meaning | Origin |
+|---|---|---|
+| never-errors | evaluation never raises an EvalError | Cedar |
+| always-denies | fires whenever its guard can — including fail-closed: a missing field never opens a bypass | Cedar + E11 |
+| always-allows / subsumption / equivalence / disjointness | permissive / implication / equivalence / mutual exclusion | Cedar |
+| override-soundness | overrides go DENY→ALLOW only (never toward a less-safe state) | **ERDL-specific** |
+| ring-respect | without overrides, ring order is honored in the DENY direction | **ERDL-specific** |
+| emergency-shortcut | EMERGENCY_HALT short-circuits the moment it fires | **ERDL-specific** |
+
+Every property can synthesize a concrete counterexample, and every counterexample can be replayed against the real engine — proof plus differential testing, double insurance.
+
+## 34/34 nodes, exact E1–E12 semantics
+
+- **All 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate.
+- The hard semantics aren't "roughly right" — they are **bit-exact**:
+  - **E2** fixed-point decimals: scale=14 + half-even — money is not allowed `0.1 + 0.2` drift;
+  - **E8** quantifier empty-array folding: anti-vacuous-truth — `all([])` is false, not true;
+  - **E11** three-valued logic: missing fields collapse to false at the leaves (not Kleene — no fail-open);
+  - **E12** tier folding, **E10** NFC normalization.
+
+## Independent verifier: three-way, byte-for-byte
+
+A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone (`erdl-spec-v2.0`), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with `erdl` (the TS engine) and `erdl-vectors` (frozen vectors):
 
 | Cross-check | Pair | Result |
 |---|---|---|
@@ -44,22 +76,48 @@ Three independent systems agree byte-for-byte:
 | Resolution | `resolution.py` ↔ erdl `Evaluator` | 4 scenarios |
 | Arithmetic vectors | ↔ erdl-vectors V-ENGINE | 7/7 |
 | Calendar vectors | ↔ erdl-vectors V-ENGINE | 6/6 |
-| G3 replay | `tvl.py` ↔ erdl engine | scenario-identical |
+| G3 counterexample replay | `tvl.py` ↔ erdl engine | scenario-identical |
+
+**Measurements, not endorsements.** Three independently built systems agreeing byte-for-byte means the spec is precise enough to sustain exact independent reimplementation.
+
+## How it differs from Cedar / OPA
+
+| | Cedar Analysis | OPA / Rego | **erdl-formal** |
+|---|---|---|---|
+| Formal verification | ✅ Lean + SMT (the field's benchmark) | ❌ no formal semantics — the implementation *is* the spec | ✅ SMT (Z3) |
+| Money | decimals only via extension plugin | float64 loses precision | ✅ scale=14 fixed-point + half-even |
+| Decision object | policy IDs only | unsigned logs | ✅ rich Decision Object (DO) |
+| Natural language | one-way (NL→policy) | one-way | ✅ deterministic gloss, anchored round-trip (two-way) |
+
+The difference is not "more formal" — Cedar's stack is the benchmark, and we say so. The difference is **what gets formalized**: ERDL is an enterprise rule kernel built for money, time, aggregation, quantifiers, decision objects, and two-way natural language — none of which exist in the Cedar / OPA world.
+
+## Architecture
+
+```
+ERDL rule (S-expression)
+   │
+   ▼  compiler.py (symbolic compiler: schema-driven field typing + quantifier index unfolding)
+Z3 TVL expressions (TVL(τ) = Def | Missing, leaf collapse)
+   │
+   ▼  properties.py (property checks) / resolution.py (resolution reference model)
+sat / unsat + counterexample (replayed against the real engine)
+```
+
+## Quick start
+
+```bash
+python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
+pytest                               # 102 passing
+python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors
+```
 
 ## Documentation
 
 - `docs/DELIVERY-REPORT.md` — delivery summary (milestones / 34-node matrix / cross-checks / pitfalls)
-- `docs/semantics.md` — denotational semantics
+- `docs/semantics.md` — denotational semantics for all 34 nodes
 - `docs/tvl-encoding.md` — three-valued logic SMT encoding
-- `docs/field-contracts.md` + `docs/schema-assumption.md` — verification schema
-
-## Development
-
-```bash
-python -m pip install -e ".[dev]"
-pytest                               # 102 passing
-python replay/crosscheck-vectors.py  # cross-check against erdl-vectors
-```
+- `docs/field-contracts.md` + `docs/schema-assumption.md` — verification schema contracts
+- `docs/plan.md` / `docs/findings.md` / `docs/audit-upgrades.md` — plan / review / spec audit
 
 ## License
 

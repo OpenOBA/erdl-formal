@@ -1,53 +1,74 @@
 # erdl-formal
 
-ERDL 表达内核的**形式化验证器**——用 SMT（Z3）对 ERDL 规则做**静态性质证明**：不只「测过」，而是「数学上证明不存在反例」。
+**确定性，不是测出来的，是证出来的。**
 
-> ERDL 是企业 AI Agent 的确定性规则语言（34 节点类型化表达式树 + E1–E12 求值约束）。本仓库回答一个问题：**这条规则，在**所有**输入下，会不会出错、会不会误放行、会不会该拦不拦？**
+erdl-formal 是 ERDL 表达内核的**形式化验证器**：把规则编译到 SMT（Z3），做**静态性质证明**——不是「测试通过」，而是「数学上不存在反例」。
 
-## 为什么需要它
+> ERDL 是企业 AI Agent 的确定性规则语言（34 节点类型化表达式树 + E1–E12 求值约束）。本仓库回答一个问题：**这条规则，在所有输入下，会不会出错、会不会误放行、会不会该拦不拦？**
 
-LLM 是概率性的，规则引擎必须确定性。但「手写 if-else + 单元测试」只能证明**测过的输入**是对的。形式化验证把「确定性」从**抽样测试**升到**全量证明**——这正是 Cedar Analysis 在 AWS 内部的价值，也是强监管行业（金融/保险/政务）审计要的「恒真」证明。
+## 为什么是现在：LLM 有蛮力，没方向
 
-## 关键特性
+LLM 是概率性的：同一个输入，两种回答。把企业决策交给概率分布，审计迟早会问——「这个决定，依据是什么？」
 
-- **34 节点全覆盖**：取值/逻辑/比较/集合/字符串/存在量纲/量词/算术/时间/聚合，全部有 SMT 编码。
-- **E1–E12 精确语义**：E2 定点小数 scale=14+half-even、E8 量词空数组折叠（反空洞真）、E11 三值逻辑（叶子折叠）、E12 tier 折叠、E10 NFC。
-- **Cedar 6 性质 + ERDL 特有性质**：never-errors / always-allows / always-denies / subsumption / equivalence / disjointness + override-soundness / ring-respect / emergency-shortcut。
-- **独立验证者**：只依据规范（`erdl-spec-v2.0`）编码，不依赖任何 ERDL 引擎实现——与 erdl（TS 引擎）、erdl-vectors（冻结向量）构成三重独立对拍。
+行业共识正在成形：**LLM 负责理解，规则负责裁决**——在 Agent 前面，必须有一层确定性规则引擎。但规则引擎的「确定性」通常靠单元测试背书，而测试只能证明**测过的输入**是对的。
 
-## 快速上手
+金融、保险、政务这类强监管行业，审计只问一个问题：
+
+> **这条规则，对所有输入都成立吗？**
+
+抽样测试回答不了这个问题，回答只能是证明。Cedar Analysis 在 AWS 内部验证了这条路（Lean 形式化 + SMT 符号分析）；erdl-formal 对 ERDL 表达内核做同样的事——把「确定性」从**抽样测试**升到**全量证明**。
+
+**和 Cedar 同一条路（形式化策略分析），不同的战场：我们证明的是为钱、时间和决策对象而生的企业规则内核。**
+
+## 30 秒，看一个证明
+
+G3 密级访问控制：文件密级 > 操作员密级 → DENY。要证明这条规则**可达**且 **fail-closed**：
 
 ```python
 from erdl_formal.field_contracts import FieldContract, Schema
 from erdl_formal.properties import always_denies
 
-# G3 涉密访问控制：文件密级 > 操作员密级 → DENY
 schema = Schema()
 schema.add(FieldContract(field="file_cls", type="int"))
 schema.add(FieldContract(field="op_cls", type="int"))
 
+# when: file_cls > op_cls  →  DENY
 rule = ["gt", ["field", "file_cls"], ["field", "op_cls"]]
 
-# 验证两条性质：
-# 1) 可达 —— 字段都在时，密级更高确实能触发拦截
-# 2) fail-closed —— 操作员密级缺失时，不产生误放行绕过
+# 一条断言，同时证明两条性质：
+# 1) 可达 —— 字段都在时，密级更高确实触发拦截
+# 2) fail-closed —— op_cls 缺失时，比较按 E11 折叠为假，
+#    规则绝不产生误放行绕过
 assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_field="op_cls")
 ```
 
-## 验证什么
+背后没有测试用例，没有抽样。Z3 在**所有整数**的空间里搜索违反性质的输入：找到，返回**可回放的具体反例**（能丢回真实引擎复核）；找不到，UNSAT——性质对全量输入成立，证毕。
+
+## 能证明什么
 
 | 性质 | 含义 | 来源 |
 |---|---|---|
 | never-errors | 求值永不产生 EvalError | Cedar |
 | always-denies | 命中即拦截（含 fail-closed：字段缺失不绕过）| Cedar + E11 |
-| always-allows / subsumption / equivalence / disjointness | 放行/蕴含/等价/互斥 | Cedar |
+| always-allows / subsumption / equivalence / disjointness | 放行 / 蕴含 / 等价 / 互斥 | Cedar |
 | override-soundness | override 仅 DENY→ALLOW 方向（不覆盖到更不安全态）| **ERDL 特有** |
-| ring-respect | 无 override 时 ring 顺序在 DENY 方向被尊重 | **ERDL 特有** |
+| ring-respect | 无 override 时，ring 顺序在 DENY 方向被尊重 | **ERDL 特有** |
 | emergency-shortcut | EMERGENCY_HALT 命中即短路 | **ERDL 特有** |
 
-## 保证（Measurements, not endorsements）
+每个性质都能合成具体反例，反例可回放真实引擎交叉验证——证明 + 差分，双保险。
 
-不自我背书——**三重独立系统逐字节对拍一致**：
+## 34/34 节点覆盖，E1–E12 精确语义
+
+- **34 节点全部有 SMT 编码**：取值 / 逻辑 / 比较 / 集合 / 字符串 / 存在量纲 / 量词 / 算术 / 时间 / 聚合。
+- 关键语义不是「大致对」，是**逐位精确**：
+  - **E2** 定点小数：scale=14 + half-even——钱，不允许 `0.1 + 0.2` 式漂移；
+  - **E8** 量词空数组折叠：反空洞真，`all([])` 是假不是真；
+  - **E11** 三值逻辑：字段缺失在叶子处折叠为假（非 Kleene，不 fail-open）；
+  - **E12** tier 折叠、**E10** NFC 归一化。
+
+## 独立验证者：三重独立，逐字节对拍
+
+验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（`erdl-spec-v2.0`）编码，零依赖任何 ERDL 引擎实现，与 `erdl`（TS 引擎）、`erdl-vectors`（冻结向量）构成三重独立：
 
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|
@@ -55,28 +76,40 @@ assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_fiel
 | 裁决语义 | `resolution.py` ↔ erdl `Evaluator` | 4 场景 |
 | 算术向量 | ↔ erdl-vectors V-ENGINE | 7/7 |
 | 日历向量 | ↔ erdl-vectors V-ENGINE | 6/6 |
-| G3 反例回放 | `tvl.py` ↔ erdl 引擎 | 逐场景一致 |
+| G3 反例回放 | `tvl.py` ↔ erdl engine | 逐场景一致 |
+
+**Measurements, not endorsements.** 三个独立构建的系统逐字节一致——说明规范足够精确，能支撑独立实现的精确复现。
+
+## 与 Cedar / OPA 的差异
+
+| | Cedar Analysis | OPA / Rego | **erdl-formal** |
+|---|---|---|---|
+| 形式化 | ✅ Lean + SMT（业界最强）| ❌ 无形式化语义（实现即规范）| ✅ SMT（Z3）|
+| 钱 | 小数仅扩展插件 | float64 丢精度 | ✅ scale=14 定点 + half-even |
+| 决策对象 | 只有策略 ID | 日志无签名 | ✅ 富决策对象（DO）|
+| 自然语言 | 单向（NL→策略）| 单向 | ✅ 确定性 gloss 锚定回译（双向）|
+
+差异不是「更形式化」——Cedar 的形式化栈是业界标杆。差异在**被形式化的东西**：ERDL 是为钱、时间、聚合、量词、决策对象与双向自然语言而生的企业规则内核，这些在 Cedar / OPA 的世界里不存在。
 
 ## 架构
 
 ```
 ERDL 规则 (S-expression)
    │
-   ▼  compiler.py（符号编译器，schema 驱动字段类型 + 量词索引展开）
+   ▼  compiler.py（符号编译器：schema 驱动字段类型 + 量词索引展开）
 Z3 TVL 表达式（TVL(τ) = Def | Missing，叶子折叠）
    │
-   ▼  properties.py（性质验证）
+   ▼  properties.py（性质验证）/ resolution.py（裁决参考模型）
 sat / unsat + 反例（回放真实引擎交叉验证）
 ```
 
-## 与竞品的差异
+## 快速上手
 
-| | Cedar Analysis | OPA/Rego | **erdl-formal** |
-|---|---|---|---|
-| 形式化 | ✅ Lean + SymCC | ❌ 语义即实现 | ✅ SMT |
-| 决策对象 | 只有策略 ID | 无签名日志 | **富决策对象（DO）** |
-| 双向 NL | 单向（NL→Cedar）| 单向 | 确定性 gloss 可锚定回译 |
-| 定点小数 | ❌（无小数）| float64 丢精度 | **scale=14 精确** |
+```bash
+python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
+pytest                               # 102 全绿
+python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
+```
 
 ## 文档
 
@@ -85,14 +118,6 @@ sat / unsat + 反例（回放真实引擎交叉验证）
 - `docs/tvl-encoding.md` — 三值逻辑 SMT 编码规范
 - `docs/field-contracts.md` + `docs/schema-assumption.md` — 验证 schema 契约
 - `docs/plan.md` / `docs/findings.md` / `docs/audit-upgrades.md` — 方案 / 审查 / 规范审计
-
-## 开发
-
-```bash
-python -m pip install -e ".[dev]"   # 安装依赖
-pytest                               # 跑测试（102 全绿）
-python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
-```
 
 ## 许可证
 
