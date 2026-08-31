@@ -220,3 +220,33 @@ def tvl_aggregate(fn, elements):
     if fn == "sum":
         return TVLInt.Def(Sum([val_int(e) for e in elements]))
     raise NotImplementedError(f"aggregate {fn!r} not in POC subset (avg/min/max need None folding)")
+
+
+# --- 非线性定点算术（mul/div，QF_NIA + half-even 舍入）---
+
+_SCALE = 10 ** 14
+
+
+def _round_half_even_div(num, den):
+    """round_half_even(num / den)，num/den 为 Z3 Int（floor div + 欧几里得 mod）。"""
+    q = num / den
+    r = num % den
+    return If(2 * r < den, q, If(2 * r > den, q + 1, If(q % 2 == 0, q, q + 1)))
+
+
+def tvl_mul(a, b):
+    """定点乘法：round_half_even(a_scaled * b_scaled / 10^14)；Missing → Missing."""
+    return If(
+        Or(is_missing_int(a), is_missing_int(b)),
+        TVLInt.Missing,
+        TVLInt.Def(_round_half_even_div(val_int(a) * val_int(b), _SCALE)),
+    )
+
+
+def tvl_div(a, b):
+    """定点除法：round_half_even(a_scaled * 10^14 / b_scaled)；除零/Missing → Missing."""
+    return If(
+        Or(is_missing_int(a), is_missing_int(b), val_int(b) == 0),
+        TVLInt.Missing,
+        TVLInt.Def(_round_half_even_div(val_int(a) * _SCALE, val_int(b))),
+    )
