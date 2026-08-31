@@ -25,6 +25,7 @@ from z3 import (
     StringSort,
     StringVal,
     SuffixOf,
+    Sum,
 )
 
 # --- TVL datatypes --------------------------------------------------------
@@ -204,3 +205,18 @@ def tvl_add(a, b):
 
 def tvl_sub(a, b):
     return _arith_binary(a, b, lambda x, y: x - y)
+
+
+# --- 聚合（count/sum，空数组折叠）---
+
+def tvl_aggregate(fn, elements):
+    """aggregate over a fixed-length array. fn in {count, sum}.
+
+    count(空)=0（len=0）；sum(空)=0（Sum([])=0）。avg/min/max 空数组折叠 false，
+    需 None 类型，M3.1 暂不做。
+    """
+    if fn == "count":
+        return TVLInt.Def(len(elements))
+    if fn == "sum":
+        return TVLInt.Def(Sum([val_int(e) for e in elements]))
+    raise NotImplementedError(f"aggregate {fn!r} not in POC subset (avg/min/max need None folding)")

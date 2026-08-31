@@ -41,6 +41,7 @@ from .tvl import (
     tvl_add,
     tvl_starts_with,
     tvl_sub,
+    tvl_aggregate,
     str_def,
     val_bool,
 )
@@ -141,6 +142,11 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_add(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "sub":
             return tvl_sub(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op == "aggregate":
+            fn, array_field = expr[1], expr[2]
+            n = ctx.schema.cardinality(array_field)
+            elems = [ctx.array_element(array_field, i) for i in range(n)]
+            return tvl_aggregate(fn, elems)
         if op in ("all", "any", "none"):
             return _quantifier(op, expr[1], ctx)
         raise NotImplementedError(f"op {op!r} not in POC subset")
