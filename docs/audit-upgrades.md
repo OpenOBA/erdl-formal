@@ -20,6 +20,7 @@
 | U7 | 战略增益 | §15 | 「逆向回译（双向 NL）」标注 Pending | erdl-formal 的确定性 gloss（`gloss==render(树)`）可铺定回译，使「双向 NL」从 LLM 概率变可验证 | 路线 |
 | U8 | 增益 | §20.3/§34 | schema 子语言（U4）应 leverage 现有法域字段映射，非从零发明 | 扩展 §20.3 字段映射机制加基数上限 | v2.1 |
 | U9 | 澄清 | §14 | gloss `exists` 布尔字段特例靠 `is_*/has_*` 命名约定启发式 | 明确 is_*/has_* 为注册约定（进单一事实源）| 低 |
+| U10 | 纠正 | §9 | 方案 §2 ring-respect「低 ring 拦截不能被高 ring 放行覆盖」为误读 | evaluator.ts 明确允许 override critical/high 跨环覆盖（DENY→ALLOW）；正确语义：无 override 时 ring 顺序在 DENY 方向被尊重 | ✅ 已回写 2026-09-01 |
 
 ---
 

@@ -68,7 +68,7 @@
 | 性质 | 规范依据 | 验证目标 |
 |---|---|---|
 | **override-soundness** | §9 优先级规则 5：override 仅 DENY→ALLOW 方向（不得覆盖到更不安全状态）| 不存在违反方向的 override 规则对 |
-| **ring-respect** | ring 0内核/1恢复/2审批/3建议（§11 规则字段）| 低 ring（内核）拦截不被高 ring（建议）放行覆盖 |
+| **ring-respect** | ring 0内核/1恢复/2审批/3建议（§9 优先级规则 + evaluator.ts）| 无 override 时 ring 顺序在 DENY 方向被尊重（高 ring DENY 覆盖低 ring ALLOW）；override critical/high 允许 DENY→ALLOW 跨环放松（显式例外）【2026-09-01 纠正：原「低 ring 拦截不能被高 ring 放行覆盖」为误读，evaluator.ts 明确允许 override 跨环覆盖】|
 | **emergency-shortcut** | EMERGENCY_HALT = 无条件终止系统（§10.6）；硬约束「违反即被拦截」（§6.1 分层规则注入）| EMERGENCY_HALT 命中时其他规则决策无效（控制流短路）|
 
 **v2 补两块**：① 多规则/策略集语义（subsumption/conflict 是策略集性质，非单表达式树）；② 符号编译器 translation validation（差分测试替代不了编译器自身的可靠性证明）。
