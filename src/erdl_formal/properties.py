@@ -6,7 +6,7 @@ emergency-shortcut. The POC subset provides the canonical satisfiability check
 `can_fire`, from which the first properties are derived.
 """
 
-from z3 import Solver, sat
+from z3 import Not, Solver, sat
 
 from .compiler import CompileContext, compile_expr
 from .tvl import is_missing_int, val_bool
@@ -44,3 +44,31 @@ def always_denies(rule_expr, schema, premises, missing_field):
     reachable = can_fire(rule_expr, schema, premises=premises)
     closed = not can_fire(rule_expr, schema, premises=premises, missing=[missing_field])
     return reachable and closed
+
+
+def subsumes(a_expr, b_expr, schema):
+    """Cedar 'subsumption': a ⇒ b (a's condition is stricter than b's).
+
+    True iff ``a ∧ ¬b`` is unsatisfiable.
+    """
+    ctx = CompileContext(schema)
+    a = compile_expr(a_expr, ctx)
+    b = compile_expr(b_expr, ctx)
+    s = Solver()
+    s.add(val_bool(a), Not(val_bool(b)))
+    return s.check() != sat
+
+
+def equivalent(a_expr, b_expr, schema):
+    """Cedar 'equivalence': a ⇔ b."""
+    return subsumes(a_expr, b_expr, schema) and subsumes(b_expr, a_expr, schema)
+
+
+def disjoint(a_expr, b_expr, schema):
+    """Cedar 'disjointness': a ∧ b is unsatisfiable (mutually exclusive)."""
+    ctx = CompileContext(schema)
+    a = compile_expr(a_expr, ctx)
+    b = compile_expr(b_expr, ctx)
+    s = Solver()
+    s.add(val_bool(a), val_bool(b))
+    return s.check() != sat
