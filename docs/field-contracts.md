@@ -1,6 +1,6 @@
 # 验证 schema（Field Contracts）
 
-> 依据：erdl-spec-v2.0 §7 字段契约 · 本仓 `erdl_formal/field_contracts.py`
+> 依据：[erdl-spec-v2.0](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md) §7 字段契约 · 本仓 `erdl_formal/field_contracts.py`
 
 ## 1. 定位
 

@@ -68,7 +68,7 @@ Every property can synthesize a concrete counterexample, and every counterexampl
 
 ## Independent verifier: three-way, byte-for-byte
 
-A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone (`erdl-spec-v2.0`), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with `erdl` (the TS engine) and `erdl-vectors` (frozen vectors):
+A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-spec-v2.0`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with `erdl` (the TS engine) and `erdl-vectors` (frozen vectors):
 
 | Cross-check | Pair | Result |
 |---|---|---|
@@ -107,7 +107,7 @@ sat / unsat + counterexample (replayed against the real engine)
 
 ```bash
 python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
-pytest                               # 102 passing
+pytest                               # 130 passing
 python examples/verify_g3.py         # prove the G3 classification rule (reachable + fail-closed)
 python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors
 ```

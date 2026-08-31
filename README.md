@@ -68,7 +68,7 @@ assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_fiel
 
 ## 独立验证者：三重独立，逐字节对拍
 
-验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（`erdl-spec-v2.0`）编码，零依赖任何 ERDL 引擎实现，与 `erdl`（TS 引擎）、`erdl-vectors`（冻结向量）构成三重独立：
+验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-spec-v2.0`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md)）编码，零依赖任何 ERDL 引擎实现，与 `erdl`（TS 引擎）、`erdl-vectors`（冻结向量）构成三重独立：
 
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|
@@ -107,7 +107,7 @@ sat / unsat + 反例（回放真实引擎交叉验证）
 
 ```bash
 python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
-pytest                               # 102 全绿
+pytest                               # 130 全绿
 python examples/verify_g3.py         # 验证 G3 密级规则（可达 + fail-closed）
 python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 ```
