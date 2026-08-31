@@ -108,6 +108,7 @@ sat / unsat + 反例（回放真实引擎交叉验证）
 ```bash
 python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
 pytest                               # 102 全绿
+python examples/verify_g3.py         # 验证 G3 密级规则（可达 + fail-closed）
 python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 ```
 
@@ -117,6 +118,13 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 - `docs/tvl-encoding.md` — 三值逻辑 SMT 编码规范
 - `docs/field-contracts.md` — 验证 schema 契约
 - `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API）
+
+## 贡献与安全
+
+- `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）
+- `SECURITY.md` — 漏洞私下报，不开公开 issue
+- `CHANGELOG.md` — 变更记录（Keep a Changelog）
+- `CODE_OF_CONDUCT.md` / `style_guide.md`
 
 ## 许可证
 

@@ -108,6 +108,7 @@ sat / unsat + counterexample (replayed against the real engine)
 ```bash
 python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
 pytest                               # 102 passing
+python examples/verify_g3.py         # prove the G3 classification rule (reachable + fail-closed)
 python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors
 ```
 
@@ -117,6 +118,13 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 - `docs/tvl-encoding.md` — three-valued logic SMT encoding
 - `docs/field-contracts.md` — verification schema contracts
 - `docs/DEVELOPER-GUIDE.md` — developer guide (architecture / adding nodes / properties / API)
+
+## Contributing & security
+
+- `CONTRIBUTING.md` — contribution process (issue-first, review)
+- `SECURITY.md` — report vulnerabilities privately, no public issue
+- `CHANGELOG.md` — changelog (Keep a Changelog)
+- `CODE_OF_CONDUCT.md` / `style_guide.md`
 
 ## License
 

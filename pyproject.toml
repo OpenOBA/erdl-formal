@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "erdl-formal"
 version = "0.1.0"
-description = "ERDL Formal Verification — SMT-based static property verification for the ERDL expression kernel (34-node typed expression tree + E1–E12 evaluation constraints)."
+description = "ERDL Formal Verification - SMT-based static property verification for the ERDL expression kernel (34-node typed expression tree + E1-E12 evaluation constraints)."
 readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
