@@ -152,3 +152,35 @@ for v in vectors:
 - 每个模块一个 `test_*.py`，覆盖「正常 / 边界 / Missing / 异常」。
 - 交叉验证放 `replay/`（不是 `tests/`，因依赖 erdl-vectors 冻结向量）。
 - 跑全量：`python -m pytest -q`（当前 130 全绿）。
+
+---
+
+## 8. 构建与发布
+
+**三种安装方式**：
+
+```bash
+# 用户（从 PyPI，一条命令）
+pip install erdl-formal
+
+# 开发者（从源码，可编辑安装）
+git clone https://github.com/OpenOBA/erdl-formal.git
+cd erdl-formal
+python -m pip install -e ".[dev]"
+
+# 从源码构建分发包（wheel + sdist）
+python -m pip install build
+python -m build        # 产出 dist/erdl_formal-0.1.0-py3-none-any.whl + .tar.gz
+```
+
+**发布到 PyPI**：
+
+```bash
+python -m pip install twine
+twine upload --repository testpypi dist/*   # 先 TestPyPI 试跑
+twine upload dist/*                         # 再正式 PyPI
+```
+
+> 发布需 PyPI 账号 + API token（免费，`pypi.org/manage/account/token/` 生成，项目级作用域；token 只显示一次）。
+>
+> 纯 Python 项目 → 单个 `py3-none-any` 通用 wheel 全平台覆盖，无需多平台矩阵。`dist/`、`build/` 已被 `.gitignore` 忽略，产物不进 git，只上 PyPI / GitHub Releases。

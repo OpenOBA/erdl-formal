@@ -103,10 +103,32 @@ Z3 TVL expressions (TVL(τ) = Def | Missing, leaf collapse)
 sat / unsat + counterexample (replayed against the real engine)
 ```
 
+## Installation
+
+**Users** (from PyPI, one command):
+
+```bash
+pip install erdl-formal
+```
+
+**Developers** (from source, editable install, changes take effect immediately):
+
+```bash
+git clone https://github.com/OpenOBA/erdl-formal.git
+cd erdl-formal
+python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
+```
+
+**Build a distribution** (wheel + sdist, for release / offline distribution):
+
+```bash
+python -m pip install build
+python -m build        # produces dist/erdl_formal-0.1.0-py3-none-any.whl + .tar.gz
+```
+
 ## Quick start
 
 ```bash
-python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
 pytest                               # 130 passing
 python examples/verify_g3.py         # prove the G3 classification rule (reachable + fail-closed)
 python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors

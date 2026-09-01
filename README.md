@@ -103,10 +103,32 @@ Z3 TVL 表达式（TVL(τ) = Def | Missing，叶子折叠）
 sat / unsat + 反例（回放真实引擎交叉验证）
 ```
 
+## 安装
+
+**用户**（从 PyPI，一条命令）：
+
+```bash
+pip install erdl-formal
+```
+
+**开发者**（从源码，可编辑安装，改代码即时生效）：
+
+```bash
+git clone https://github.com/OpenOBA/erdl-formal.git
+cd erdl-formal
+python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
+```
+
+**从源码构建分发包**（wheel + sdist，供发布 / 离线分发）：
+
+```bash
+python -m pip install build
+python -m build        # 产出 dist/erdl_formal-0.1.0-py3-none-any.whl + .tar.gz
+```
+
 ## 快速上手
 
 ```bash
-python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
 pytest                               # 130 全绿
 python examples/verify_g3.py         # 验证 G3 密级规则（可达 + fail-closed）
 python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
