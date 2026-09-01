@@ -44,7 +44,6 @@ def _val(v):
 
 
 def test_days_from_civil_epoch():
-    assert _val(TVLInt.Def(days_from_civil(0, 0, 0))) == 0 if False else True  # placeholder
     assert simplify(days_from_civil(1970, 1, 1)).as_long() == 0
     assert simplify(days_from_civil(1970, 1, 2)).as_long() == 1
 
