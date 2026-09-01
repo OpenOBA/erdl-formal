@@ -19,4 +19,4 @@
 | `CODE_OF_CONDUCT.md` | Contributor Covenant v2.1 |
 | `style_guide.md` | 代码/注释/提交约定 |
 
-> 入口：`../README.md`（中文）/ `../README.en.md`（English）
+> 入口：`../README.md`（中文）/ `../README.en.md`（English） · 英文文档索引见 `README.en.md`

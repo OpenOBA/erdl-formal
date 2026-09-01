@@ -123,7 +123,7 @@ python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solve
 
 ```bash
 python -m pip install build
-python -m build        # 产出 dist/erdl_formal-0.1.0-py3-none-any.whl + .tar.gz
+python -m build        # 产出 dist/erdl_formal-0.1.1-py3-none-any.whl + .tar.gz
 ```
 
 ## 快速上手
@@ -139,7 +139,9 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 - `docs/semantics.md` — 34 节点指称语义
 - `docs/tvl-encoding.md` — 三值逻辑 SMT 编码规范
 - `docs/field-contracts.md` — 验证 schema 契约
-- `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API）
+- `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API / 构建发布）
+
+> 英文版：`docs/*.en.md`
 
 ## 贡献与安全
 

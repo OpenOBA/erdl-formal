@@ -123,7 +123,7 @@ python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-sol
 
 ```bash
 python -m pip install build
-python -m build        # produces dist/erdl_formal-0.1.0-py3-none-any.whl + .tar.gz
+python -m build        # produces dist/erdl_formal-0.1.1-py3-none-any.whl + .tar.gz
 ```
 
 ## Quick start
@@ -136,10 +136,10 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 
 ## Documentation
 
-- `docs/semantics.md` — denotational semantics for all 34 nodes
-- `docs/tvl-encoding.md` — three-valued logic SMT encoding
-- `docs/field-contracts.md` — verification schema contracts
-- `docs/DEVELOPER-GUIDE.md` — developer guide (architecture / adding nodes / properties / API)
+- `docs/semantics.en.md` — denotational semantics for all 34 nodes
+- `docs/tvl-encoding.en.md` — three-valued logic SMT encoding
+- `docs/field-contracts.en.md` — verification schema contracts
+- `docs/DEVELOPER-GUIDE.en.md` — developer guide (architecture / adding nodes / properties / API / build & publish)
 
 ## Contributing & security
 
