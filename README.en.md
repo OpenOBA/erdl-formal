@@ -4,7 +4,7 @@ A formal verifier for the ERDL expression kernel — proving rule safety over al
 
 There are two kinds of determinism: the determinism tests cover, and the determinism mathematics proves. erdl-formal provides the latter.
 
-> ERDL is the deterministic rule language for enterprise AI agents (a 34-node typed expression tree + E1–E12 evaluation constraints). This repo answers one question: **over *all* inputs, does this rule ever error, ever fail open, or ever miss a block it should make?**
+>"erdl-formal formally verifies ERDL v2.1's expression kernel and evaluation semantics (§5, §7, Appendix A), covering all 34 nodes and the E1–E12 constraints. The spec's other layers (document structure, gloss rendering, integration modes) are guaranteed by test vectors and engineering verification."
 
 ## Why now: LLMs have brute force. They don't have direction.
 
