@@ -2,8 +2,6 @@
 
 A formal verifier for the ERDL expression kernel — proving rule safety over all inputs with Z3.
 
-**Determinism isn't tested. It's proven.**
-
 > ERDL is the deterministic rule language for enterprise AI agents (a 34-node typed expression tree + E1–E12 evaluation constraints). This repo answers one question: **over *all* inputs, does this rule ever error, ever fail open, or ever miss a block it should make?**
 
 ## Why now: LLMs have brute force. They don't have direction.

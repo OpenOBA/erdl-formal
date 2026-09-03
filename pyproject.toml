@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "erdl-formal"
 version = "0.1.1"
-description = "Determinism isn't tested — it's proven. SMT-based formal verification for ERDL, the rule language of enterprise AI agents."
+description = "SMT-based (Z3) formal verification for the ERDL expression kernel — proving rules safe over all inputs."
 readme = "README.en.md"
 requires-python = ">=3.11"
 license = { text = "Apache-2.0" }
