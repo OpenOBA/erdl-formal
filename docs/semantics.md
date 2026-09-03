@@ -1,6 +1,6 @@
 # 指称语义（Denotational Semantics）· 34 节点内核
 
-> 依据：[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.md) §5 / §7 · 本仓 `tvl.py` / `quantifiers.py` / `fixed_point.py`
+> 依据：[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.md) §5 / §7 · 本仓 `tvl.py` / `quantifiers.py` / `fixed_point.py`
 
 本文定义 ERDL 表达式内核 34 节点的**指称语义**——每个节点的「输入 → 输出」数学函数。它是符号编译器（ERDL → SMT-LIB）的编码依据，也是反例回放的判定基准。
 

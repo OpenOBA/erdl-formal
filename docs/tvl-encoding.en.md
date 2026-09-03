@@ -1,6 +1,6 @@
 # Three-valued logic SMT encoding spec
 
-> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.en.md) §7.2 E11/E12
+> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md) §7.2 E11/E12
 
 ## 1. Encoding carrier
 
@@ -31,7 +31,7 @@ The core Expression tree's `not` does not auto-add an exists guard. Writing `not
 
 ## 5. Decision: leaf collapse (not Kleene)
 
-This encoding uses **leaf collapse** (spec E11 "field-absent uniformly returns false"), **not Kleene propagation**. Rationale ([erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.en.md) §7.2 E11):
+This encoding uses **leaf collapse** (spec E11 "field-absent uniformly returns false"), **not Kleene propagation**. Rationale ([erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md) §7.2 E11):
 
 | Model | `not(absent)` | Positioning | For Guard scenarios |
 |---|---|---|---|

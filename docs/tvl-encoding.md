@@ -1,6 +1,6 @@
 # 三值逻辑 SMT 编码规范
 
-> 依据：[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.md) §7.2 E11/E12
+> 依据：[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.md) §7.2 E11/E12
 
 ## 1. 编码载体
 
@@ -31,7 +31,7 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 
 ## 5. 决策：叶子折叠（非 Kleene）
 
-本编码采用**叶子折叠**（规范 E11「字段缺失统一返回 false」），**不是 Kleene 传播**。依据（[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.md) §7.2 E11）：
+本编码采用**叶子折叠**（规范 E11「字段缺失统一返回 false」），**不是 Kleene 传播**。依据（[erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.md) §7.2 E11）：
 
 | 模型 | `not(缺失)` | 定位 | 对 Guard 场景 |
 |---|---|---|---|
