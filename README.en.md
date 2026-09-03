@@ -18,7 +18,9 @@ In regulated industries — finance, insurance, government — the audit questio
 
 Sampled tests can't answer that. Only a proof can. Cedar Analysis proved this approach works inside AWS (Lean formalization + SMT symbolic analysis). erdl-formal does the same for the ERDL expression kernel — lifting determinism from **sampled testing** to **exhaustive proof**.
 
-**Same road as Cedar Analysis (formal policy analysis), different battlefield: we prove an enterprise rule kernel built for money, time, and decision objects.**
+- **Cedar Analysis**: used inside AWS, Lean + SMT, not open to the public, serving only AWS's own policy language.
+- **OPA/Rego**: no formal semantics — "the implementation is the spec."
+- **erdl-formal**: open source, 34-node full coverage, ERDL-specific semantics (money, time, decision objects, bidirectional gloss).
 
 ## One proof in 30 seconds
 
