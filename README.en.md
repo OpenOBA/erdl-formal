@@ -84,14 +84,17 @@ A verifier is only credible if it **never peeks at the examinee's answers**. erd
 
 ## How it differs from Cedar / OPA
 
-| | Cedar Analysis | OPA / Rego | **erdl-formal** |
+| Dimension | Cedar Analysis | OPA / Rego | **erdl-formal** |
 |---|---|---|---|
-| Formal verification | ✅ Lean + SMT (the field's benchmark) | ❌ no formal semantics — the implementation *is* the spec | ✅ SMT (Z3) |
-| Money | decimals only via extension plugin | float64 loses precision | ✅ scale=14 fixed-point + half-even |
-| Decision object | policy IDs only | unsigned logs | ✅ rich Decision Object (DO) |
+| Formal verification | ✅ Lean + SMT (the field's benchmark, closed) | ❌ no formal semantics — the implementation *is* the spec | ✅ SMT (Z3), open source |
+| Fixed-point (money) | decimals only via extension plugin | float64 loses precision | ✅ scale=14 + half-even |
+| Time / calendar | — | — | ✅ UTC calendar (days_between / date_add / date_part / month-end) |
+| Aggregation | — | — | ✅ aggregate (count / sum / avg / min / max) |
+| Quantifiers | — | — | ✅ all / any / none (E8 empty-array fold) |
+| Decision object | policy IDs only | unsigned logs | ✅ rich DO + hash chain |
 | Natural language | one-way (NL→policy) | one-way | ✅ deterministic gloss, anchored round-trip (two-way) |
 
-The difference is not "more formal" — Cedar's stack is the benchmark, and we say so. The difference is **what gets formalized**: ERDL is an enterprise rule kernel built for money, time, aggregation, quantifiers, decision objects, and two-way natural language — none of which exist in the Cedar / OPA world.
+The difference is not "more formal" — Cedar's stack is the benchmark, and we say so. The difference is **what gets formalized**: ERDL is an enterprise rule kernel built for money, time, aggregation, quantifiers, decision objects, and two-way natural language — none of which exist in the Cedar / OPA world (the `—` rows above).
 
 ## Architecture
 
