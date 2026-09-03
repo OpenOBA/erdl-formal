@@ -1,6 +1,6 @@
 # Verification schema (Field Contracts)
 
-> Basis: [erdl-spec-v2.0](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md) "field contracts" (EntityFieldContract) · this repo's `erdl_formal/field_contracts.py`
+> Basis: [erdl-spec v2.1](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md) (EntityFieldContract) · this repo's `erdl_formal/field_contracts.py`
 
 ## 1. Positioning
 
