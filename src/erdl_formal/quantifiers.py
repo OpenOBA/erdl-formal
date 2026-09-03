@@ -14,7 +14,7 @@
 
 """Quantifier encoding (E8): all / any / none over a bounded array.
 
-E8 (spec v2.0 §10.2): empty array → **all / any / none ALL fold to false** —
+E8 (spec v2.1 §7.2 / §7.3(b)): empty array → **all / any / none ALL fold to false** —
 a deliberate safe deviation from the standard ``all([])=true`` vacuous truth,
 to prevent fail-open ("no elements to check → treated as all-pass").
 

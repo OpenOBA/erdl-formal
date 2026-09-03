@@ -15,7 +15,7 @@
 """Gregorian calendar (civil algorithm) — SMT encoding for date_add / date_part / month_last_day.
 
 Days-from-civil / civil-from-days (Howard Hinnant) as deterministic Z3 integer
-functions, over raw epoch-millisecond timestamps (UTC). The spec §10.5 anchors
+functions, over raw epoch-millisecond timestamps (UTC). The spec §7.3(f) anchors
 the calendar layer's cross-implementation consistency via dual-implementation
 vectors; this SMT encoding additionally enables static verification.
 """

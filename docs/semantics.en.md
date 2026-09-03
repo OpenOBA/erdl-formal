@@ -1,6 +1,6 @@
 # Denotational Semantics · 34-node kernel
 
-> Basis: [erdl-spec-v2.0](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md) §10 · this repo's `tvl.py` / `quantifiers.py` / `fixed_point.py`
+> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.0.en.md) §5 / §7 · this repo's `tvl.py` / `quantifiers.py` / `fixed_point.py`
 
 This document defines the **denotational semantics** of the 34 nodes of the ERDL expression kernel — the "input → output" mathematical function of each node. It is the encoding basis of the symbolic compiler (ERDL → SMT-LIB) and the judgment baseline for counterexample replay.
 

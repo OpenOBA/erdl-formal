@@ -14,7 +14,7 @@
 
 """Fixed-point decimal semantics (E2): scale=14 + half-even rounding.
 
-Spec v2.0 §10.4(b) + E2:
+Spec v2.1 §7.2 E2 + §7.3(c):
 - intermediate computation uses high-precision bounded rationals (128-bit num/den)
 - ONLY output nodes round to scale=14 + half-even (banker's rounding)
 - serialization uses minimal representation (§28.2)

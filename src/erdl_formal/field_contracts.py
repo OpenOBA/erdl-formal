@@ -14,7 +14,7 @@
 
 """Field contracts — the verification schema (v2.1 candidate).
 
-Spec v2.0 has ``EntityFieldContract`` (field/display_name/type/description)
+Spec v2.1 has ``EntityFieldContract`` (field/display_name/type/description)
 for **rule production**, but no *verification* schema (no cardinality bound).
 This module is the **verification schema** (schema-as-assumption): field type +
 cardinality + optionality, which grounds quantifier/aggregate index expansion

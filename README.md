@@ -70,7 +70,7 @@ assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_fiel
 
 ## 独立验证者：三重独立，逐字节对拍
 
-验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-spec-v2.0`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-spec-v2.0.md)）编码，零依赖任何 ERDL 引擎实现，与 `erdl`（TS 引擎）、`erdl-vectors`（冻结向量）构成三重独立：
+验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.0.md)）编码，零依赖任何 ERDL 引擎实现，与 `erdl`（TS 引擎）、`erdl-vectors`（冻结向量）构成三重独立：
 
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|

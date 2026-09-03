@@ -14,7 +14,7 @@
 
 """Three-valued logic (E11) — leaf-collapse semantics.
 
-The ERDL kernel (spec v2.0 §10.2 E11) uses *leaf collapse*: a comparison whose
+The ERDL kernel (spec v2.1 §7.2 E11 / §7.3(a)) uses *leaf collapse*: a comparison whose
 operand is a missing field collapses to ``false``; arithmetic collapses to
 ``EvaluationError`` (→ E12 tier folding). Boolean operators (and/or/not) are
 therefore **two-valued** — they only ever see collapsed booleans.
@@ -22,7 +22,7 @@ therefore **two-valued** — they only ever see collapsed booleans.
 Encoding: ADT ``TVL(τ) = Def(value: τ) | Missing``.
 
 This is the spec-accurate model (NOT Kleene propagation; leaf collapse per
-spec v2.0 §10.2 E11).
+spec v2.1 §7.2 E11).
 """
 
 from z3 import (
