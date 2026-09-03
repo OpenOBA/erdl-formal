@@ -14,7 +14,7 @@
 
 """Field contracts — the verification schema (v2.1 candidate).
 
-The ERDL product spec (``erdl-spec-v2.0.md``, field contracts) defines
+The ERDL language spec v2.1 (``erdl-spec.md``) defines
 ``EntityFieldContract`` (field/display_name/type/description) for **rule
 production**, but no *verification* schema (no cardinality bound).
 This module is the **verification schema** (schema-as-assumption): field type +
