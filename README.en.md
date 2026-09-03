@@ -70,7 +70,7 @@ Every property can synthesize a concrete counterexample, and every counterexampl
 
 ## Independent verifier: three-way, byte-for-byte
 
-A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.0.en.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with `erdl` (the TS engine) and `erdl-vectors` (frozen vectors):
+A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.en.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with `erdl` (the TS engine) and `erdl-vectors` (frozen vectors):
 
 | Cross-check | Pair | Result |
 |---|---|---|

@@ -1,6 +1,6 @@
 # Verification schema (Field Contracts)
 
-> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.0.en.md) §3 / §7.0.1 field contracts (fact object) · this repo's `erdl_formal/field_contracts.py`
+> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/spec/erdl-language-spec-v2.1.en.md) §3 / §7.0.1 field contracts (fact object) · this repo's `erdl_formal/field_contracts.py`
 
 ## 1. Positioning
 
