@@ -162,7 +162,6 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 ## Known limitations
 
 - **Aggregate `avg/min/max`**: `aggregate` currently implements `count`/`sum` only; `avg`/`min`/`max` need a `None` type (empty-array folding) — pending (`tvl_aggregate` raises `NotImplementedError`).
-- **`match` literal-only**: `match` currently supports literal exact match (`tvl_match` uses Z3 `Re(pattern)`); full regex syntax needs a regex parser.
 
 ## Contributing & security
 

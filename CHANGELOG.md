@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] - 2026-09-04
+
+### Added
+
+- **`match` 安全正则子集 → Z3 Re 编码**（对齐 spec §7.3(d)）：新增 `regex.py`，手写递归下降解析器把「安全正则子集」（正则语言）编译成 Z3 正则，精确编码 JS `RegExp.test()` 无 flag 语义——非锚定子串搜索、`.` 排除行终止符（`\n \r \u2028 \u2029`）、`\d\w\s`（及补集）ASCII 语义、`^`/`$` 锚点、`\b` ASCII 词边界、量词（含 `{m,n}`/`{m,}`/惰性）、交替、分组（含 `(?<name>)` 命名组）。`tvl_match` 从「字面量精确匹配」升级为完整安全子集匹配。
+- **非正则构造拒绝**：反向引用（`\1`–`\9`/`\k<…>`）、环视（`(?=)`/`(?! )`/`(?<=)`/`(?<!)`）、原子组、条件组、内联标志、`\B`、中间位置 `^`/`$` 一律抛 `RegexError`（fail-closed，与运行时 safeRegExp 加载时拒绝对齐）。
+- 24 个新测试（`tests/test_regex.py`）：子串/锚点/`.`/字符类/简写/量词/词边界/真实规则语料/拒绝用例。
+
 ## [0.1.5] - 2026-09-04
 
 ### Fixed

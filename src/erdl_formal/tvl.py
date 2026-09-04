@@ -37,7 +37,6 @@ from z3 import (
     Not,
     Or,
     PrefixOf,
-    Re,
     StringSort,
     StringVal,
     SuffixOf,
@@ -230,8 +229,14 @@ def tvl_length(s):
 
 
 def tvl_match(s, pattern):
-    """match: literal exact match (full regex syntax needs a regex parser)."""
-    return TVLBool.Def(If(is_missing_str(s), False, InRe(val_str(s), Re(pattern))))
+    """match: ERDL safe-regex subset → Z3 Re (JS RegExp.test semantics, §7.3(d)).
+
+    Raises RegexError for patterns outside the safe subset (backreferences /
+    lookaround / inline flags), matching the runtime's load-time rejection.
+    """
+    from .regex import compile_match
+    re_ = compile_match(pattern)
+    return TVLBool.Def(If(is_missing_str(s), False, InRe(val_str(s), re_)))
 
 
 # --- set (in) + linear arithmetic (add/sub, exact) ---
