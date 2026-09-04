@@ -225,7 +225,7 @@ def tvl_ne_str(a, b):
 
 
 def tvl_length(s):
-    """length (Unicode code points; Z3 strings are 8-bit sequences, code points/bytes differ for non-ASCII)."""
+    """length (Unicode code points — Z3 StringSort is Seq(Char), Length counts code points)."""
     return If(is_missing_str(s), TVLInt.Missing, TVLInt.Def(Length(val_str(s))))
 
 

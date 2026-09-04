@@ -163,7 +163,6 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 
 - **Aggregate `avg/min/max`**: `aggregate` currently implements `count`/`sum` only; `avg`/`min`/`max` need a `None` type (empty-array folding) — pending (`tvl_aggregate` raises `NotImplementedError`).
 - **`match` literal-only**: `match` currently supports literal exact match (`tvl_match` uses Z3 `Re(pattern)`); full regex syntax needs a regex parser.
-- **`length` non-ASCII**: Z3 strings are 8-bit byte sequences, so `length` returns byte count rather than Unicode code points for non-ASCII (the spec defines code points); ASCII is unaffected.
 
 ## Contributing & security
 

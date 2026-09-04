@@ -164,7 +164,6 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 - **聚合 `avg/min/max`**：`aggregate` 目前只实现 `count`/`sum`；`avg`/`min`/`max` 需要 `None` 类型（空数组折叠），待实现（`tvl_aggregate` 抛 `NotImplementedError`）。
 - **`match` 仅字面量**：`match` 目前只支持字面量精确匹配（`tvl_match` 用 Z3 `Re(pattern)`）；完整正则语法需正则解析器。
-- **`length` 非 ASCII**：Z3 字符串是 8 位字节序列，`length` 对非 ASCII 返回字节数而非 Unicode 码点数（规范定义为码点）；ASCII 下两者一致。
 
 ## 贡献与安全
 
