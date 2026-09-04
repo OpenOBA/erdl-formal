@@ -101,7 +101,7 @@ assert not always_denies(
 | 形式化 | ✅ Lean + SMT（业界标杆，闭源） | ❌ 无形式化语义（实现即规范） | ✅ SMT（Z3），开源 |
 | 定点小数（钱） | 小数扩展插件 | float64 丢精度 | ✅ scale=14 + half-even |
 | 时间 / 日历 | — | — | ✅ UTC 日历（days_between / date_add / date_part / 月末） |
-| 聚合 | — | — | ✅ aggregate（count / sum；avg / min / max 待 None 类型） |
+| 聚合 | — | — | ✅ aggregate（count / sum / avg / min / max） |
 | 量词 | — | — | ✅ all / any / none（E8 空数组折叠） |
 | 决策对象 | 策略 ID | 日志无签名 | ✅ 富 DO + 哈希链 |
 | 自然语言 | 单向（NL→策略） | 单向 | ✅ 确定性 gloss 锚定回译（双向） |
@@ -140,7 +140,7 @@ python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solve
 
 ```bash
 python -m pip install build
-python -m build        # 产出 dist/erdl_formal-0.1.4-py3-none-any.whl + .tar.gz
+python -m build        # 产出 dist/erdl_formal-<version>-py3-none-any.whl + .tar.gz
 ```
 
 ## 快速上手

@@ -170,7 +170,7 @@ python -m pip install -e ".[dev]"
 
 # Build a distribution from source (wheel + sdist)
 python -m pip install build
-python -m build        # produces dist/erdl_formal-0.1.1-py3-none-any.whl + .tar.gz
+python -m build        # produces dist/erdl_formal-<version>-py3-none-any.whl + .tar.gz
 ```
 
 **Publish to PyPI**:
