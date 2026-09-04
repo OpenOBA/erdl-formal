@@ -5,6 +5,25 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.5] - 2026-09-04
+
+### Fixed
+
+- **`in` 集合成员按字段类型分派（第三方审计）**：`tvl_in` 只支持 int，字符串/布尔字段的
+  `in` 直接 `Z3Exception: Sort mismatch`。补 `tvl_in_str`/`tvl_in_bool`，`compiler.py` 对 `in`
+  按操作数 sort 分派；成员 sort 不一致抛 `TypeError`。
+- **`div` 负数除数 half-even 舍入（第三方审计）**：`_round_half_even_div` 假设正除数，负数
+  除数时 `num % den` 带负号导致舍入方向错。补 `_round_half_even_div_signed` 将符号归一化后
+  舍入再回贴符号（half-even 对称：round(-x) = -round(x)）。
+- **数组元素建模为原始 τ（非 TVL(τ)）**：`array_element` 返回 TVL 类型导致量词/聚合的
+  `val_bool/val_int(Missing)` 为未定义访问器（`value(Missing)`），潜在 unsound。改为返回
+  原始 Bool/Int/String，量词与聚合不再对元素做 TVL 解包。
+
+### Changed
+
+- README：`aggregate` 表项如实标注 `avg/min/max` 待实现；新增「已知限制」段（`match` 仅
+  字面量、`length` 非 ASCII 字节数）；版本/测试计数去悬空数字。
+
 ## [0.1.4] - 2026-09-04
 
 ### Added

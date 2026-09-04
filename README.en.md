@@ -102,7 +102,7 @@ A verifier is only credible if it **never peeks at the examinee's answers**. erd
 | Formal verification | ✅ Lean + SMT (the field's benchmark, closed) | ❌ no formal semantics — the implementation *is* the spec | ✅ SMT (Z3), open source |
 | Fixed-point (money) | decimals only via extension plugin | float64 loses precision | ✅ scale=14 + half-even |
 | Time / calendar | — | — | ✅ UTC calendar (days_between / date_add / date_part / month-end) |
-| Aggregation | — | — | ✅ aggregate (count / sum / avg / min / max) |
+| Aggregation | — | — | ✅ aggregate (count / sum; avg / min / max pending a None type) |
 | Quantifiers | — | — | ✅ all / any / none (E8 empty-array fold) |
 | Decision object | policy IDs only | unsigned logs | ✅ rich DO + hash chain |
 | Natural language | one-way (NL→policy) | one-way | ✅ deterministic gloss, anchored round-trip (two-way) |
@@ -141,13 +141,13 @@ python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-sol
 
 ```bash
 python -m pip install build
-python -m build        # produces dist/erdl_formal-0.1.1-py3-none-any.whl + .tar.gz
+python -m build        # produces dist/erdl_formal-0.1.4-py3-none-any.whl + .tar.gz
 ```
 
 ## Quick start
 
 ```bash
-pytest                               # 130 passing
+pytest                               # all passing
 python examples/verify_g3.py         # prove the G3 classification rule (reachable + fail-closed)
 python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors
 ```
@@ -158,6 +158,12 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 - `docs/tvl-encoding.en.md` — three-valued logic SMT encoding
 - `docs/field-contracts.en.md` — verification schema contracts
 - `docs/DEVELOPER-GUIDE.en.md` — developer guide (architecture / adding nodes / properties / API / build & publish)
+
+## Known limitations
+
+- **Aggregate `avg/min/max`**: `aggregate` currently implements `count`/`sum` only; `avg`/`min`/`max` need a `None` type (empty-array folding) — pending (`tvl_aggregate` raises `NotImplementedError`).
+- **`match` literal-only**: `match` currently supports literal exact match (`tvl_match` uses Z3 `Re(pattern)`); full regex syntax needs a regex parser.
+- **`length` non-ASCII**: Z3 strings are 8-bit byte sequences, so `length` returns byte count rather than Unicode code points for non-ASCII (the spec defines code points); ASCII is unaffected.
 
 ## Contributing & security
 

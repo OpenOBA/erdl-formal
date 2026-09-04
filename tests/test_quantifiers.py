@@ -36,22 +36,22 @@ def _approval_rule(approvals):
 
 def test_all_fires_when_every_approver_approved():
     """all([T, T, T]) → rule fires (ALLOW)."""
-    approvals = [TVLBool.Def(Bool(f"a{i}")) for i in range(3)]
+    approvals = [Bool(f"a{i}") for i in range(3)]
     fired = _approval_rule(approvals)
     s = Solver()
     s.add(fired)
     assert s.check() == sat
     m = s.model()
-    assert all(m.eval(val_bool(a)) for a in approvals)
+    assert all(m.eval(a) for a in approvals)
 
 
 def test_all_does_not_fire_when_any_not_approved():
     """any approver not approved → all() = False → no ALLOW (fail-closed)."""
-    approvals = [TVLBool.Def(Bool(f"a{i}")) for i in range(3)]
+    approvals = [Bool(f"a{i}") for i in range(3)]
     fired = _approval_rule(approvals)
     s = Solver()
     # force one approver to be "not approved" (False)
-    s.add(Not(val_bool(approvals[1])))
+    s.add(Not(approvals[1]))
     s.add(fired)
     assert s.check() == unsat  # rule never fires when any is False
 
@@ -83,12 +83,12 @@ def test_three_valued_and_leaf_collapse():
 def test_tvl_any_semantics():
     from erdl_formal.quantifiers import tvl_any
     assert is_false(simplify(val_bool(tvl_any([]))))  # E8: any([]) = False
-    one_true = [TVLBool.Def(True), TVLBool.Def(False)]
+    one_true = [True, False]
     assert is_true(simplify(val_bool(tvl_any(one_true))))
 
 
 def test_tvl_none_semantics():
     from erdl_formal.quantifiers import tvl_none
     assert is_false(simplify(val_bool(tvl_none([]))))  # E8: none([]) = False
-    no_true = [TVLBool.Def(False), TVLBool.Def(False)]
+    no_true = [False, False]
     assert is_true(simplify(val_bool(tvl_none(no_true))))

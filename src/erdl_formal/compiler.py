@@ -25,7 +25,7 @@ S-expression form (aligned with the erdl external form):
   ["all"|"any"|"none", "array_field"]
 """
 
-from z3 import Const, Not
+from z3 import BoolSort, Const, IntSort, Not, StringSort
 
 from .field_contracts import Schema
 from .quantifiers import tvl_all, tvl_any, tvl_none
@@ -50,6 +50,8 @@ from .tvl import (
     tvl_gt,
     tvl_gte,
     tvl_in,
+    tvl_in_bool,
+    tvl_in_str,
     tvl_length,
     tvl_lt,
     tvl_lte,
@@ -90,6 +92,18 @@ class CompileContext:
             "rational/array need cardinality support"
         )
 
+    def _raw_sort(self, type_name):
+        """Raw (non-TVL) sort for array elements — Array<τ> elements are τ, not TVL(τ)."""
+        if type_name == "bool":
+            return BoolSort()
+        if type_name == "int":
+            return IntSort()
+        if type_name == "string":
+            return StringSort()
+        raise NotImplementedError(
+            f"array element type {type_name!r} not in the supported subset (int/bool/string)"
+        )
+
     def field(self, path):
         if path not in self._fields:
             c = self.schema.get(path)
@@ -101,7 +115,7 @@ class CompileContext:
         if key not in self._fields:
             c = self.schema.get(path)
             elem_ty = (c.element_type if c else None) or "bool"
-            self._fields[key] = Const(f"field[{key}]", self._sort(elem_ty))
+            self._fields[key] = Const(f"field[{key}]", self._raw_sort(elem_ty))
         return self._fields[key]
 
     def premise(self, path):
@@ -158,6 +172,20 @@ def _exists(x):
     raise NotImplementedError(f"exists on sort {s!r} not supported")
 
 
+def _in(x, members):
+    """Type-dispatched set membership (int / string / bool)."""
+    s = x.sort()
+    if members and any(m.sort() != s for m in members):
+        raise TypeError(f"in: member sort mismatch (field {s} vs member)")
+    if s == TVLInt:
+        return tvl_in(x, members)
+    if s == TVLStr:
+        return tvl_in_str(x, members)
+    if s == TVLBool:
+        return tvl_in_bool(x, members)
+    raise NotImplementedError(f"in on sort {s!r} not supported")
+
+
 def compile_expr(expr, ctx: CompileContext):
     """Compile an S-expression to a Z3 TVL expression."""
     if isinstance(expr, list):
@@ -195,7 +223,7 @@ def compile_expr(expr, ctx: CompileContext):
         if op == "in":
             x = compile_expr(expr[1], ctx)
             members = [compile_expr(m, ctx) for m in expr[2]]
-            return tvl_in(x, members)
+            return _in(x, members)
         if op == "add":
             return tvl_add(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "sub":

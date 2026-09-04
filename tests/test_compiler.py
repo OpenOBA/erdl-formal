@@ -16,7 +16,7 @@
 
 import pytest
 
-from z3 import is_expr
+from z3 import BoolSort, is_expr
 
 from erdl_formal.compiler import CompileContext, compile_expr
 from erdl_formal.field_contracts import FieldContract, Schema
@@ -81,6 +81,14 @@ def test_bool_exists_field():
     s = Schema()
     s.add(FieldContract(field="flag", type="bool"))
     assert can_fire(["exists", ["field", "flag"]], s, premises=["flag"]) is True
+
+
+def test_array_element_is_raw_sort():
+    """Array<τ> elements are raw τ, not TVL(τ) — no spurious Missing elements."""
+    s = Schema()
+    s.add(FieldContract(field="approvers", type="array", element_type="bool", cardinality=3))
+    ctx = CompileContext(s)
+    assert ctx.array_element("approvers", 0).sort() == BoolSort()
 
 
 def _approval_schema():

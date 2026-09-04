@@ -61,6 +61,20 @@ def test_compiler_in():
     assert can_fire(expr, s, premises=["status"]) is True
 
 
+def test_compiler_in_string_field():
+    s = Schema()
+    s.add(FieldContract(field="tool.name", type="string"))
+    expr = ["in", ["field", "tool.name"], [["lit", "read"], ["lit", "write"]]]
+    assert can_fire(expr, s, premises=["tool.name"]) is True
+
+
+def test_compiler_in_bool_field():
+    s = Schema()
+    s.add(FieldContract(field="flag", type="bool"))
+    expr = ["in", ["field", "flag"], [["lit", True], ["lit", False]]]
+    assert can_fire(expr, s, premises=["flag"]) is True
+
+
 def test_compiler_add_compare():
     s = Schema()
     s.add(FieldContract(field="a", type="int"))

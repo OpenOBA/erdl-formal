@@ -243,6 +243,20 @@ def tvl_in(x, members):
     )
 
 
+def tvl_in_str(x, members):
+    """String set membership (leaf collapse: Missing → Def(False))."""
+    return TVLBool.Def(
+        If(is_missing_str(x), False, Or(*[val_str(x) == val_str(m) for m in members]))
+    )
+
+
+def tvl_in_bool(x, members):
+    """Bool set membership (leaf collapse: Missing → Def(False))."""
+    return TVLBool.Def(
+        If(is_missing_bool(x), False, Or(*[val_bool(x) == val_bool(m) for m in members]))
+    )
+
+
 def _arith_binary(a, b, op):
     """Linear fixed-point arithmetic (unified scale, exact add/sub); any Missing → Missing."""
     return If(
@@ -263,7 +277,7 @@ def tvl_sub(a, b):
 # --- aggregate (count/sum, empty-array collapse) ---
 
 def tvl_aggregate(fn, elements):
-    """aggregate over a fixed-length array. fn in {count, sum}.
+    """aggregate over a fixed-length array of raw τ elements. fn in {count, sum}.
 
     count([])=0 (len=0); sum([])=0 (Sum([])=0). avg/min/max over empty fold to
     false; they need a None type (not yet supported).
@@ -271,7 +285,7 @@ def tvl_aggregate(fn, elements):
     if fn == "count":
         return TVLInt.Def(len(elements))
     if fn == "sum":
-        return TVLInt.Def(Sum([val_int(e) for e in elements]))
+        return TVLInt.Def(Sum(elements))
     raise NotImplementedError(f"aggregate {fn!r} not yet supported (avg/min/max need None folding)")
 
 
@@ -281,10 +295,23 @@ _SCALE = 10 ** 14
 
 
 def _round_half_even_div(num, den):
-    """round_half_even(num / den), num/den are Z3 Ints (floor div + Euclidean mod)."""
+    """round_half_even(num / den), den > 0; num/den are Z3 Ints (floor div + Euclidean mod)."""
     q = num / den
     r = num % den
     return If(2 * r < den, q, If(2 * r > den, q + 1, If(q % 2 == 0, q, q + 1)))
+
+
+def _round_half_even_div_signed(num, den):
+    """round_half_even(num / den) for arbitrary-sign den (den != 0).
+
+    Normalizes to a positive denominator and applies the quotient sign after
+    rounding (half-even is symmetric: round_half_even(-x) = -round_half_even(x)).
+    """
+    neg = (num < 0) != (den < 0)
+    n = If(num < 0, -num, num)
+    d = If(den < 0, -den, den)
+    q = _round_half_even_div(n, d)
+    return If(neg, -q, q)
 
 
 def tvl_mul(a, b):
@@ -301,7 +328,7 @@ def tvl_div(a, b):
     return If(
         Or(is_missing_int(a), is_missing_int(b), val_int(b) == 0),
         TVLInt.Missing,
-        TVLInt.Def(_round_half_even_div(val_int(a) * _SCALE, val_int(b))),
+        TVLInt.Def(_round_half_even_div_signed(val_int(a) * _SCALE, val_int(b))),
     )
 
 

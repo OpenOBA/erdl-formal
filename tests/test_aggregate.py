@@ -14,15 +14,15 @@
 
 """Aggregate (count/sum) over a fixed-length array."""
 
-from z3 import simplify
+from z3 import IntVal, simplify
 
 from erdl_formal.field_contracts import FieldContract, Schema
 from erdl_formal.properties import can_fire
-from erdl_formal.tvl import TVLInt, tvl_aggregate, val_int
+from erdl_formal.tvl import tvl_aggregate, val_int
 
 
 def test_count():
-    elems = [TVLInt.Def(1), TVLInt.Def(2), TVLInt.Def(3)]
+    elems = [IntVal(1), IntVal(2), IntVal(3)]
     assert simplify(val_int(tvl_aggregate("count", elems))).as_long() == 3
 
 
@@ -31,7 +31,7 @@ def test_count_empty():
 
 
 def test_sum():
-    elems = [TVLInt.Def(1), TVLInt.Def(2), TVLInt.Def(3)]
+    elems = [IntVal(1), IntVal(2), IntVal(3)]
     assert simplify(val_int(tvl_aggregate("sum", elems))).as_long() == 6
 
 

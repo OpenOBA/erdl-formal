@@ -101,7 +101,7 @@ assert not always_denies(
 | 形式化 | ✅ Lean + SMT（业界标杆，闭源） | ❌ 无形式化语义（实现即规范） | ✅ SMT（Z3），开源 |
 | 定点小数（钱） | 小数扩展插件 | float64 丢精度 | ✅ scale=14 + half-even |
 | 时间 / 日历 | — | — | ✅ UTC 日历（days_between / date_add / date_part / 月末） |
-| 聚合 | — | — | ✅ aggregate（count / sum / avg / min / max） |
+| 聚合 | — | — | ✅ aggregate（count / sum；avg / min / max 待 None 类型） |
 | 量词 | — | — | ✅ all / any / none（E8 空数组折叠） |
 | 决策对象 | 策略 ID | 日志无签名 | ✅ 富 DO + 哈希链 |
 | 自然语言 | 单向（NL→策略） | 单向 | ✅ 确定性 gloss 锚定回译（双向） |
@@ -140,13 +140,13 @@ python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solve
 
 ```bash
 python -m pip install build
-python -m build        # 产出 dist/erdl_formal-0.1.1-py3-none-any.whl + .tar.gz
+python -m build        # 产出 dist/erdl_formal-0.1.4-py3-none-any.whl + .tar.gz
 ```
 
 ## 快速上手
 
 ```bash
-pytest                               # 130 全绿
+pytest                               # 全绿
 python examples/verify_g3.py         # 验证 G3 密级规则（可达 + fail-closed）
 python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 ```
@@ -159,6 +159,12 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 - `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API / 构建发布）
 
 > 英文版：`docs/*.en.md`
+
+## 已知限制
+
+- **聚合 `avg/min/max`**：`aggregate` 目前只实现 `count`/`sum`；`avg`/`min`/`max` 需要 `None` 类型（空数组折叠），待实现（`tvl_aggregate` 抛 `NotImplementedError`）。
+- **`match` 仅字面量**：`match` 目前只支持字面量精确匹配（`tvl_match` 用 Z3 `Re(pattern)`）；完整正则语法需正则解析器。
+- **`length` 非 ASCII**：Z3 字符串是 8 位字节序列，`length` 对非 ASCII 返回字节数而非 Unicode 码点数（规范定义为码点）；ASCII 下两者一致。
 
 ## 贡献与安全
 

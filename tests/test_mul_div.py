@@ -71,3 +71,12 @@ def test_mul_div_crosscheck_reference():
         ref = int(to_scale14_half_even(ref_div(parse(a_s), parse(b_s))) * _SCALE)
         got = simplify(val_int(tvl_div(TVLInt.Def(_scaled(a_s)), TVLInt.Def(_scaled(b_s))))).as_long()
         assert got == ref, f"div({a_s},{b_s}): SMT {got} != ref {ref}"
+
+
+def test_div_negative_divisor_crosscheck():
+    """div with a negative divisor: half-even sign must be applied after rounding."""
+    cases = [("1", "-3"), ("-1", "-3"), ("2.5", "-0.5"), ("-2.5", "0.5"), ("0.1", "-0.3")]
+    for a_s, b_s in cases:
+        ref = int(to_scale14_half_even(ref_div(parse(a_s), parse(b_s))) * _SCALE)
+        got = simplify(val_int(tvl_div(TVLInt.Def(_scaled(a_s)), TVLInt.Def(_scaled(b_s))))).as_long()
+        assert got == ref, f"div({a_s},{b_s}): SMT {got} != ref {ref}"
