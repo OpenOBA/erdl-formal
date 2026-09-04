@@ -48,6 +48,11 @@ def test_length():
     assert simplify(val_int(tvl_length(str_def("hello")))).as_long() == 5
 
 
+def test_length_unicode_codepoints():
+    # Z3 StringSort is Seq(Char): Length counts Unicode code points, not UTF-8 bytes.
+    assert simplify(val_int(tvl_length(str_def("你好ab")))).as_long() == 4
+
+
 def test_string_missing_collapses_false():
     assert is_false(simplify(val_bool(tvl_contains(TVLStr.Missing, str_def("x")))))
 
