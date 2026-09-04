@@ -59,7 +59,11 @@ def test_epoch_ms_leap_day():
 
 
 def test_epoch_ms_invalid_is_missing():
-    for s in ["invalid", "2026-13-01", "2026-02-30", "2026-01-01T25:00:00", "not-a-date"]:
+    for s in [
+        "invalid", "2026-13-01", "2026-02-30", "2026-01-01T25:00:00", "not-a-date",
+        # fractional seconds are outside the deterministic whole-second subset
+        "2026-01-01T12:30:45.123Z", "2026-01-01T12:30:45.5",
+    ]:
         assert _run(s) is None, f"{s!r} should be Missing"
 
 
