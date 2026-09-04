@@ -83,6 +83,32 @@ def test_bool_exists_field():
     assert can_fire(["exists", ["field", "flag"]], s, premises=["flag"]) is True
 
 
+def test_missing_string_field_does_not_crash():
+    """forcing a string field Missing must be type-dispatched, not int (regression: Sort mismatch)."""
+    s = Schema()
+    s.add(FieldContract(field="name", type="string"))
+    assert can_fire(["eq", ["field", "name"], ["lit", "x"]], s, missing=["name"]) is False
+
+
+def test_missing_bool_field_does_not_crash():
+    s = Schema()
+    s.add(FieldContract(field="active", type="bool"))
+    assert can_fire(["eq", ["field", "active"], ["lit", True]], s, missing=["active"]) is False
+
+
+def test_always_denies_string_missing_fails_open():
+    s = Schema()
+    s.add(FieldContract(field="status", type="string"))
+    # status == "active" with a missing status + ALLOW fallback -> fail-open (property False)
+    assert (
+        always_denies(
+            ["eq", ["field", "status"], ["lit", "active"]], s,
+            missing_field="status", default_decision="ALLOW",
+        )
+        is False
+    )
+
+
 def test_array_element_is_raw_sort():
     """Array<τ> elements are raw τ, not TVL(τ) — no spurious Missing elements."""
     s = Schema()

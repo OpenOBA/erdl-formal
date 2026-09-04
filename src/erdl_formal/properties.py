@@ -23,7 +23,7 @@ check `can_fire`, from which the first properties are derived.
 from z3 import Not, Solver, sat
 
 from .compiler import CompileContext, compile_expr
-from .tvl import is_missing_int, val_bool
+from .tvl import val_bool
 
 
 def can_fire(rule_expr, schema, premises=(), missing=()):
@@ -40,7 +40,7 @@ def can_fire(rule_expr, schema, premises=(), missing=()):
     for p in premises:
         s.add(ctx.premise(p))
     for m in missing:
-        s.add(is_missing_int(ctx.field(m)))
+        s.add(ctx.missing(m))
     s.add(val_bool(cond))
     return s.check() == sat
 

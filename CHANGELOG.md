@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.11] - 2026-09-05
+
+### Fixed
+
+- **`can_fire` 对非 int 字段强制 Missing 时崩溃**：`can_fire(missing=[...])` 无条件用 `is_missing_int(ctx.field(m))` 强制字段 Missing，string/bool 守卫字段直接 `Z3Exception: Sort mismatch`（崩溃而非返回验证结果）。`always_denies(missing_field=...)` 是其直接调用方（README 首页 fail-closed 探针），对 `status == "active"` 这类极常见守卫必崩。现 `CompileContext.missing(path)` 按字段类型分派（int/string/bool），`premise(path)` 复用为 `Not(missing(path))`，`can_fire` 改走 `ctx.missing(m)`。
+- 3 个回归测试（string/bool 字段 missing 不崩 + `always_denies` string missing fail-open）。
+
 ## [0.1.10] - 2026-09-04
 
 ### Added

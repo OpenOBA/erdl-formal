@@ -133,16 +133,20 @@ class CompileContext:
             self._fields[key] = Const(f"field[{key}]", self._raw_sort(elem_ty))
         return self._fields[key]
 
-    def premise(self, path):
-        """Schema premise: the field is present (not Missing)."""
+    def missing(self, path):
+        """Schema absence: the field is Missing (type-dispatched by field type)."""
         f = self.field(path)
         c = self.schema.get(path)
         ty = c.type if c else "int"
         if ty == "bool":
-            return Not(is_missing_bool(f))
+            return is_missing_bool(f)
         if ty == "string":
-            return Not(is_missing_str(f))
-        return Not(is_missing_int(f))
+            return is_missing_str(f)
+        return is_missing_int(f)
+
+    def premise(self, path):
+        """Schema premise: the field is present (not Missing)."""
+        return Not(self.missing(path))
 
 
 _EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
