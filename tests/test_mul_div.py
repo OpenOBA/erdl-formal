@@ -80,3 +80,16 @@ def test_div_negative_divisor_crosscheck():
         ref = int(to_scale14_half_even(ref_div(parse(a_s), parse(b_s))) * _SCALE)
         got = simplify(val_int(tvl_div(TVLInt.Def(_scaled(a_s)), TVLInt.Def(_scaled(b_s))))).as_long()
         assert got == ref, f"div({a_s},{b_s}): SMT {got} != ref {ref}"
+
+
+def test_compiler_routes_mul_div():
+    """mul/div are wired into the S-expression compiler (were silently unrouted)."""
+    from erdl_formal.field_contracts import FieldContract, Schema
+    from erdl_formal.properties import can_fire
+
+    s = Schema()
+    s.add(FieldContract(field="a", type="int"))
+    s.add(FieldContract(field="b", type="int"))
+    # a * b > 0 satisfiable; a / b > 0 satisfiable
+    assert can_fire(["gt", ["mul", ["field", "a"], ["field", "b"]], ["lit", 0]], s, premises=["a", "b"]) is True
+    assert can_fire(["gt", ["div", ["field", "a"], ["field", "b"]], ["lit", 0]], s, premises=["a", "b"]) is True

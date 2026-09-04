@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.8] - 2026-09-04
+
+### Fixed
+
+- **`mul`/`div` 算术节点静默缺口（全面 review 发现）**：`tvl_mul`/`tvl_div` 早已实现并有测试（`test_mul_div.py`），但 `compiler.py` 的 S-expression 编译器从未路由 `["mul", …]`/`["div", …]`——规则一旦用到乘法/除法（E2 定点「钱」算术）会直接 `NotImplementedError`。现补路由 + 集成测试。
+
+### Changed
+
+- README「34 节点全部有 SMT 编码」修正为「32/34」：`var`（`$`/`$.path` 上下文变量）与 `epoch_ms`（日期字符串→毫秒解析）两个节点未在规则中使用、暂未编码，如实标注。
+
 ## [0.1.7] - 2026-09-04
 
 ### Added

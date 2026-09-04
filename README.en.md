@@ -74,7 +74,7 @@ Every property can synthesize a concrete counterexample, and every counterexampl
 
 ## 34/34 nodes, exact E1–E12 semantics
 
-- **All 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (comparison and existence dispatch by field type: int / string / bool).
+- **32 of the 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (comparison and existence dispatch by field type: int / string / bool). `var` (`$`/`$.path` context variables) and `epoch_ms` (date-string→milliseconds parsing) are unused in rules and not yet encoded.
 - The hard semantics aren't "roughly right" — they are **bit-exact**:
   - **E2** fixed-point decimals: scale=14 + half-even — money is not allowed `0.1 + 0.2` drift;
   - **E8** quantifier empty-array folding: anti-vacuous-truth — `all([])` is false, not true;

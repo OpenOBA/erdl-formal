@@ -61,6 +61,8 @@ from .tvl import (
     tvl_not,
     tvl_or,
     tvl_add,
+    tvl_div,
+    tvl_mul,
     tvl_starts_with,
     tvl_sub,
     tvl_aggregate,
@@ -228,6 +230,10 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_add(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "sub":
             return tvl_sub(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op == "mul":
+            return tvl_mul(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op == "div":
+            return tvl_div(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "aggregate":
             fn, array_field = expr[1], expr[2]
             n = ctx.schema.cardinality(array_field)
