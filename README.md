@@ -24,7 +24,7 @@ LLM 是概率性的：同一个输入，两种回答。把企业决策交给概�
 
 ## 30 秒，看一个证明
 
-G3 密级访问控制：文件密级 > 操作员密级 → DENY。要证明这条规则**可达**且 **fail-closed**：
+G3 密级访问控制：文件密级 > 操作员密级 → DENY。要证明这条规则**可达**，且缺失字段**不绕过**（fail-closed）：
 
 ```python
 from erdl_formal.field_contracts import FieldContract, Schema
@@ -39,9 +39,21 @@ rule = ["gt", ["field", "file_cls"], ["field", "op_cls"]]
 
 # 一条断言，同时证明两条性质：
 # 1) 可达 —— 字段都在时，密级更高确实触发拦截
-# 2) fail-closed —— op_cls 缺失时，比较按 E11 折叠为假，
-#    规则绝不产生误放行绕过
-assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_field="op_cls")
+# 2) fail-closed —— 字段缺失不绕过。这条性质取决于文档的未命中兜底决策
+#    （default_decision）：兜底为 DENY 时，op_cls 缺失→守卫折叠为假→兜底仍拒绝，
+#    不绕过；兜底为 ALLOW（resolution 默认）时，缺失即放行——规则 fail-open。
+assert always_denies(
+    rule, schema,
+    premises=["file_cls", "op_cls"],
+    missing_field="op_cls",
+    default_decision="DENY",
+)
+assert not always_denies(
+    rule, schema,
+    premises=["file_cls", "op_cls"],
+    missing_field="op_cls",
+    default_decision="ALLOW",
+)
 ```
 
 背后没有测试用例，没有抽样。Z3 在**所有整数**的空间里搜索违反性质的输入：找到，返回**可回放的具体反例**（能丢回真实引擎复核）；找不到，UNSAT——性质对全量输入成立，证毕。
@@ -51,7 +63,7 @@ assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_fiel
 | 性质 | 含义 | 来源 |
 |---|---|---|
 | never-errors | 求值永不产生 EvalError | Cedar |
-| always-denies | 命中即拦截（含 fail-closed：字段缺失不绕过）| Cedar + E11 |
+| always-denies | 守卫可满足即拦截；配合 `default_decision` 判定字段缺失是否绕过 | Cedar + E11 |
 | always-allows / subsumption / equivalence / disjointness | 放行 / 蕴含 / 等价 / 互斥 | Cedar |
 | override-soundness | override 仅 DENY→ALLOW 方向（不覆盖到更不安全态）| **ERDL 特有** |
 | ring-respect | 无 override 时，ring 顺序在 DENY 方向被尊重 | **ERDL 特有** |
@@ -65,7 +77,7 @@ assert always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_fiel
 - 关键语义不是「大致对」，是**逐位精确**：
   - **E2** 定点小数：scale=14 + half-even——钱，不允许 `0.1 + 0.2` 式漂移；
   - **E8** 量词空数组折叠：反空洞真，`all([])` 是假不是真；
-  - **E11** 三值逻辑：字段缺失在叶子处折叠为假（非 Kleene，不 fail-open）；
+  - **E11** 三值逻辑：字段缺失在叶子处折叠为假（非 Kleene）；「缺失是否 fail-open」由文档兜底决策决定（见 `always_denies` 的 `default_decision`）；
   - **E12** tier 折叠、**E10** NFC 归一化。
 
 ## 独立验证者：三重独立，逐字节对拍

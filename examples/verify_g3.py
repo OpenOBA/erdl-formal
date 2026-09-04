@@ -16,9 +16,14 @@
 
     when: file_cls > op_cls  ->  DENY
 
-The `always_denies` property proves two things at once:
+The `always_denies` property checks two things:
 1. reachable  — with both fields present, a higher classification fires the block;
 2. fail-closed — a missing operator classification does NOT open a bypass.
+
+Whether a missing `op_cls` opens a bypass depends on the document's unmatched
+fallback (`default_decision`): under a DENY fallback it stays closed; under the
+ALLOW fallback (resolution default) the silenced guard falls through to ALLOW
+and the rule fails open.
 
 Run:  python examples/verify_g3.py
 """
@@ -33,9 +38,21 @@ def main():
 
     rule = ["gt", ["field", "file_cls"], ["field", "op_cls"]]
 
-    holds = always_denies(rule, schema, premises=["file_cls", "op_cls"], missing_field="op_cls")
-    print(f"G3 reachable + fail-closed: {holds}")
-    return 0 if holds else 1
+    closed = always_denies(
+        rule, schema,
+        premises=["file_cls", "op_cls"],
+        missing_field="op_cls",
+        default_decision="DENY",
+    )
+    open_ = always_denies(
+        rule, schema,
+        premises=["file_cls", "op_cls"],
+        missing_field="op_cls",
+        default_decision="ALLOW",
+    )
+    print(f"G3 reachable + fail-closed (DENY fallback): {closed}")
+    print(f"G3 fails open (ALLOW fallback):             {open_}")
+    return 0 if (closed and not open_) else 1
 
 
 if __name__ == "__main__":

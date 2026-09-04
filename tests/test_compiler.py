@@ -42,17 +42,32 @@ def test_g3_can_fire_with_premise():
 
 def test_g3_fail_closed_when_op_missing():
     s = _g3_schema()
-    # op_cls Missing → gt collapses False → never fires → fail-closed (no bypass)
+    # op_cls Missing → gt collapses False → guard never fires (leaf collapse, E11)
     assert can_fire(_g3_rule(), s, premises=["file_cls"], missing=["op_cls"]) is False
 
 
 def test_g3_always_denies():
     s = _g3_schema()
+    # DENY fallback → a silenced guard still denies (fail-closed holds).
     assert (
         always_denies(
-            _g3_rule(), s, premises=["file_cls", "op_cls"], missing_field="op_cls"
+            _g3_rule(), s, premises=["file_cls", "op_cls"],
+            missing_field="op_cls", default_decision="DENY",
         )
         is True
+    )
+
+
+def test_g3_always_denies_fails_open_with_allow_default():
+    s = _g3_schema()
+    # ALLOW fallback (resolution default) → a missing op_cls silences the guard
+    # and falls through to ALLOW → the rule fails open (property must be False).
+    assert (
+        always_denies(
+            _g3_rule(), s, premises=["file_cls", "op_cls"],
+            missing_field="op_cls", default_decision="ALLOW",
+        )
+        is False
     )
 
 

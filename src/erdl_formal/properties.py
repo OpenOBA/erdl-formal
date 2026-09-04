@@ -45,18 +45,32 @@ def can_fire(rule_expr, schema, premises=(), missing=()):
     return s.check() == sat
 
 
-def always_denies(rule_expr, schema, premises, missing_field):
-    """ERDL 'always-denies' property (fail-closed check).
+def always_denies(rule_expr, schema, premises=(), missing_field=None, *, default_decision="ALLOW"):
+    """ERDL 'always-denies' property (reachability + fail-closed check).
 
-    A DENY rule must block whenever its guard is satisfiable, but must ALSO
-    fail-closed: a missing guard field must NOT open a bypass.
+    A DENY rule blocks **when its guard fires**. A guard that does not fire does
+    NOT block — the action falls through to the document's unmatched-fallback
+    decision (`default_decision`, see `resolution.resolve`: ``ALLOW`` when no
+    rule matches).
+
+    ``missing_field`` probes fail-closedness: a missing guard field must not
+    open a bypass. Whether it does depends on the fallback:
+
+    - ``default_decision="DENY"`` → a silenced guard still denies → closed.
+    - ``default_decision="ALLOW"`` → a silenced guard falls through to ALLOW →
+      the rule FAILS OPEN (property is False).
 
     Returns True iff:
     - the rule can fire under the premises (reachable), AND
-    - forcing `missing_field` Missing makes it NEVER fire (collapse → fail-closed).
+    - (no ``missing_field`` given) OR
+    - (``missing_field`` given): the guard still fires with the field Missing
+      **or** the fallback decision is DENY (so a silenced guard cannot bypass).
     """
     reachable = can_fire(rule_expr, schema, premises=premises)
-    closed = not can_fire(rule_expr, schema, premises=premises, missing=[missing_field])
+    if missing_field is None:
+        return reachable
+    still_fires = can_fire(rule_expr, schema, premises=premises, missing=[missing_field])
+    closed = (default_decision == "DENY") or still_fires
     return reachable and closed
 
 
