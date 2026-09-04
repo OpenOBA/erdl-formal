@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] - 2026-09-04
+
+### Added
+
+- **`epoch_ms` 节点（日期字符串→epoch 毫秒）编码**：`calendar.py` 新增 `tvl_epoch_ms`，用 Z3 `StrToInt` + `Extract` + 数字正则守卫解析固定长度日期字符串（date-only `YYYY-MM-DD`、datetime `YYYY-MM-DDTHH:MM:SS`、带 `Z`、带 `±HH:MM` 时区偏移），复用 `days_from_civil` 算 epoch；非法/缺失→`Missing`。`compiler.py` 补 `["epoch_ms", arg]` 路由。至此 **34 节点全部编码**。
+- 6 个测试（`tests/test_epoch_ms.py`）：date-only/datetime/闰日/时区偏移/非法/缺失/编译器集成，交叉验证 Python `datetime.fromisoformat`。
+
 ## [0.1.9] - 2026-09-04
 
 ### Added

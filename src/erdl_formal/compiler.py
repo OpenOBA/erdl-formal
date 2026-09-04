@@ -72,7 +72,7 @@ from .tvl import (
     val_bool,
 )
 
-from .calendar import tvl_date_add, tvl_date_part, tvl_month_last_day
+from .calendar import tvl_date_add, tvl_date_part, tvl_epoch_ms, tvl_month_last_day
 
 
 class CompileContext:
@@ -262,6 +262,8 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_date_part(expr[1], compile_expr(expr[2], ctx))
         if op == "month_last_day":
             return tvl_month_last_day(compile_expr(expr[1], ctx))
+        if op == "epoch_ms":
+            return tvl_epoch_ms(compile_expr(expr[1], ctx))
         if op == "date_add":
             return tvl_date_add(expr[1], compile_expr(expr[2], ctx), compile_expr(expr[3], ctx))
         if op in ("all", "any", "none"):
