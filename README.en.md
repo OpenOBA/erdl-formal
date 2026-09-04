@@ -159,10 +159,6 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 - `docs/field-contracts.en.md` — verification schema contracts
 - `docs/DEVELOPER-GUIDE.en.md` — developer guide (architecture / adding nodes / properties / API / build & publish)
 
-## Known limitations
-
-- **Aggregate `avg/min/max`**: `aggregate` currently implements `count`/`sum` only; `avg`/`min`/`max` need a `None` type (empty-array folding) — pending (`tvl_aggregate` raises `NotImplementedError`).
-
 ## Contributing & security
 
 - `CONTRIBUTING.md` — contribution process (issue-first, review)

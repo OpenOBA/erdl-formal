@@ -131,4 +131,4 @@ def test_is_missing_bool():
 
 def test_aggregate_unsupported_fn_raises():
     with pytest.raises(NotImplementedError):
-        tvl_aggregate("avg", [])
+        tvl_aggregate("median", [])

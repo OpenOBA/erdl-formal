@@ -281,17 +281,47 @@ def tvl_sub(a, b):
 
 # --- aggregate (count/sum, empty-array collapse) ---
 
-def tvl_aggregate(fn, elements):
-    """aggregate over a fixed-length array of raw τ elements. fn in {count, sum}.
+def _fold_min(elements):
+    """Integer minimum via an If-fold (elements are raw τ, never Missing)."""
+    m = elements[0]
+    for e in elements[1:]:
+        m = If(e < m, e, m)
+    return m
 
-    count([])=0 (len=0); sum([])=0 (Sum([])=0). avg/min/max over empty fold to
-    false; they need a None type (not yet supported).
+
+def _fold_max(elements):
+    """Integer maximum via an If-fold (elements are raw τ, never Missing)."""
+    m = elements[0]
+    for e in elements[1:]:
+        m = If(e > m, e, m)
+    return m
+
+
+def tvl_aggregate(fn, elements):
+    """aggregate over a fixed-length array of raw τ elements. fn in {count, sum, avg, min, max}.
+
+    count([])=0 (len=0); sum([])=0 (Sum([])=0) — empty identity.
+    avg/min/max([]) fold to false (Missing — E11 leaf-collapse makes every
+    comparison false), per spec §7.3(e) safe-failure folding.
     """
     if fn == "count":
         return TVLInt.Def(len(elements))
     if fn == "sum":
         return TVLInt.Def(Sum(elements))
-    raise NotImplementedError(f"aggregate {fn!r} not yet supported (avg/min/max need None folding)")
+    if fn == "avg":
+        if not elements:
+            return TVLInt.Missing
+        # scale-14 fixed-point avg: round_half_even(sum / count)
+        return TVLInt.Def(_round_half_even_div_signed(Sum(elements), len(elements)))
+    if fn == "min":
+        if not elements:
+            return TVLInt.Missing
+        return TVLInt.Def(_fold_min(elements))
+    if fn == "max":
+        if not elements:
+            return TVLInt.Missing
+        return TVLInt.Def(_fold_max(elements))
+    raise NotImplementedError(f"aggregate {fn!r} not supported")
 
 
 # --- nonlinear fixed-point arithmetic (mul/div, QF_NIA + half-even rounding) ---

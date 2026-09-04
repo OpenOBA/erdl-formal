@@ -160,10 +160,6 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 > 英文版：`docs/*.en.md`
 
-## 已知限制
-
-- **聚合 `avg/min/max`**：`aggregate` 目前只实现 `count`/`sum`；`avg`/`min`/`max` 需要 `None` 类型（空数组折叠），待实现（`tvl_aggregate` 抛 `NotImplementedError`）。
-
 ## 贡献与安全
 
 - `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）

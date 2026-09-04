@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] - 2026-09-04
+
+### Added
+
+- **`aggregate` `avg`/`min`/`max` 补全（对齐 spec §7.3(e)）**：`tvl_aggregate` 从只支持 `count`/`sum` 扩展为支持全部 5 个聚合函数。`avg` 空数组→`Missing`（E11 叶子折叠使比较为 false），非空→`Def(round_half_even(sum/count))`（scale-14 定点）；`min`/`max` 空数组→`Missing`，非空→`Def(If 折叠)`。不再需要 `None` 类型——spec §7.3(e) 的「折叠 false」语义与 `Missing` 的 E11 折叠一致。
+- 7 个新测试（avg 精确/半值/half-even 舍入、min/max、空数组折叠、编译器集成）；更新 `test_aggregate_unsupported_fn_raises` 为真正不支持的 `median`。
+
 ## [0.1.6] - 2026-09-04
 
 ### Added
