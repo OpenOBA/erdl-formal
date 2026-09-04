@@ -128,11 +128,34 @@ def tvl_ne(a, b):
     return _collapse_binary(a, b, lambda x, y: x != y)
 
 
+def _collapse_bool_binary(a, b, op):
+    """Boolean comparison with leaf collapse: any Missing operand → Def(False)."""
+    return TVLBool.Def(
+        If(Or(is_missing_bool(a), is_missing_bool(b)), False, op(val_bool(a), val_bool(b)))
+    )
+
+
+def tvl_eq_bool(a, b):
+    return _collapse_bool_binary(a, b, lambda x, y: x == y)
+
+
+def tvl_ne_bool(a, b):
+    return _collapse_bool_binary(a, b, lambda x, y: x != y)
+
+
 # --- existence (the ONLY operator that senses field presence) -------------
 
 def exists_int(x):
     """exists(field) = field is not Missing (E11: only way to sense presence)."""
     return TVLBool.Def(Not(is_missing_int(x)))
+
+
+def exists_str(x):
+    return TVLBool.Def(Not(is_missing_str(x)))
+
+
+def exists_bool(x):
+    return TVLBool.Def(Not(is_missing_bool(x)))
 
 
 # --- two-valued boolean operators (leaves already collapsed) --------------
@@ -190,6 +213,15 @@ def tvl_starts_with(s, t):
 
 def tvl_ends_with(s, t):
     return _collapse_str_binary(s, t, lambda x, y: SuffixOf(y, x))
+
+
+def tvl_eq_str(a, b):
+    """String equality (leaf collapse: any Missing operand → Def(False))."""
+    return _collapse_str_binary(a, b, lambda x, y: x == y)
+
+
+def tvl_ne_str(a, b):
+    return _collapse_str_binary(a, b, lambda x, y: x != y)
 
 
 def tvl_length(s):

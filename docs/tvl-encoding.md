@@ -43,7 +43,7 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 | 规范项 | 代码 |
 |---|---|
 | TVL ADT | `tvl.TVLInt` / `tvl.TVLBool` |
-| 比较折叠 | `tvl.tvl_gt` / `tvl_eq` 等（`_collapse_binary`）|
+| 比较折叠 | `tvl.tvl_gt` / `tvl_eq` 等（`_collapse_binary`）；字符串/布尔等值 `tvl_eq_str/ne_str` / `tvl_eq_bool/ne_bool`（`_collapse_str_binary` / `_collapse_bool_binary`）|
 | 布尔两值 | `tvl.tvl_and` / `tvl_or` / `tvl_not` |
-| 存在性 | `tvl.exists_int`（唯一感知字段存在性）|
+| 存在性 | `tvl.exists_int` / `exists_str` / `exists_bool`（按字段类型分派，唯一感知字段存在性）|
 | 量词 E8 | `quantifiers.tvl_all` / `tvl_any` / `tvl_none` |

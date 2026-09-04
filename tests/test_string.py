@@ -63,3 +63,38 @@ def test_match_literal():
     from erdl_formal.tvl import tvl_match
     assert is_true(simplify(val_bool(tvl_match(str_def("read_file"), "read_file"))))
     assert is_false(simplify(val_bool(tvl_match(str_def("read_file"), "write"))))
+
+
+def test_string_eq():
+    from erdl_formal.tvl import tvl_eq_str
+    assert is_true(simplify(val_bool(tvl_eq_str(str_def("abc"), str_def("abc")))))
+    assert is_false(simplify(val_bool(tvl_eq_str(str_def("abc"), str_def("abd")))))
+
+
+def test_string_ne():
+    from erdl_formal.tvl import tvl_ne_str
+    assert is_true(simplify(val_bool(tvl_ne_str(str_def("abc"), str_def("abd")))))
+    assert is_false(simplify(val_bool(tvl_ne_str(str_def("abc"), str_def("abc")))))
+
+
+def test_string_eq_missing_collapses_false():
+    from erdl_formal.tvl import tvl_eq_str
+    assert is_false(simplify(val_bool(tvl_eq_str(TVLStr.Missing, str_def("x")))))
+
+
+def test_compiler_string_eq_field():
+    s = Schema()
+    s.add(FieldContract(field="tool.name", type="string"))
+    assert can_fire(["eq", ["field", "tool.name"], ["lit", "issue_refund"]], s, premises=["tool.name"]) is True
+
+
+def test_compiler_string_ne_field():
+    s = Schema()
+    s.add(FieldContract(field="tool.name", type="string"))
+    assert can_fire(["ne", ["field", "tool.name"], ["lit", "issue_refund"]], s, premises=["tool.name"]) is True
+
+
+def test_compiler_string_exists_field():
+    s = Schema()
+    s.add(FieldContract(field="tool.name", type="string"))
+    assert can_fire(["exists", ["field", "tool.name"]], s, premises=["tool.name"]) is True

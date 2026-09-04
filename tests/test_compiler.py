@@ -71,6 +71,18 @@ def test_g3_always_denies_fails_open_with_allow_default():
     )
 
 
+def test_bool_eq_field():
+    s = Schema()
+    s.add(FieldContract(field="flag", type="bool"))
+    assert can_fire(["eq", ["field", "flag"], ["lit", True]], s, premises=["flag"]) is True
+
+
+def test_bool_exists_field():
+    s = Schema()
+    s.add(FieldContract(field="flag", type="bool"))
+    assert can_fire(["exists", ["field", "flag"]], s, premises=["flag"]) is True
+
+
 def _approval_schema():
     s = Schema()
     s.add(FieldContract(field="approvers", type="array", element_type="bool", cardinality=3))

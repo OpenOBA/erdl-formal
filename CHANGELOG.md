@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.4] - 2026-09-04
+
+### Added
+
+- **字符串/布尔比较与存在的 SMT 编码（第三方审计发现）**：此前 `eq/ne/exists` 只支持 int
+  字段，字符串字段的 `eq(tool.name, …)` 直接 `Z3Exception: Sort mismatch`。现在补
+  `tvl_eq_str/ne_str/eq_bool/ne_bool` + `exists_str/exists_bool`，`compiler.py` 对 `eq/ne/exists`
+  按操作数 sort 分派；`gt/gte/lt/lte` 仍仅 int，遇 string/bool 抛清晰 `NotImplementedError`
+  （不再让 Z3 崩 sort mismatch），操作数 sort 不一致抛 `TypeError`。感谢 ANP2 Network。
+
 ## [0.1.3] - 2026-09-04
 
 ### Fixed

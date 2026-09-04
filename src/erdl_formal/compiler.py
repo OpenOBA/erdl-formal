@@ -33,7 +33,9 @@ from .tvl import (
     TVLBool,
     TVLInt,
     TVLStr,
+    exists_bool,
     exists_int,
+    exists_str,
     is_missing_bool,
     is_missing_int,
     is_missing_str,
@@ -43,6 +45,8 @@ from .tvl import (
     tvl_days_between,
     tvl_ends_with,
     tvl_eq,
+    tvl_eq_bool,
+    tvl_eq_str,
     tvl_gt,
     tvl_gte,
     tvl_in,
@@ -50,6 +54,8 @@ from .tvl import (
     tvl_lt,
     tvl_lte,
     tvl_ne,
+    tvl_ne_bool,
+    tvl_ne_str,
     tvl_not,
     tvl_or,
     tvl_add,
@@ -110,14 +116,46 @@ class CompileContext:
         return Not(is_missing_int(f))
 
 
-_BINARY = {
-    "eq": tvl_eq,
-    "ne": tvl_ne,
-    "gt": tvl_gt,
-    "gte": tvl_gte,
-    "lt": tvl_lt,
-    "lte": tvl_lte,
-}
+_EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
+_EQ_NE_STR = {"eq": tvl_eq_str, "ne": tvl_ne_str}
+_EQ_NE_BOOL = {"eq": tvl_eq_bool, "ne": tvl_ne_bool}
+_ORDER = {"gt": tvl_gt, "gte": tvl_gte, "lt": tvl_lt, "lte": tvl_lte}
+
+
+def _cmp_eq(op, a, b):
+    """Type-dispatched equality/inequality (int / string / bool)."""
+    sa, sb = a.sort(), b.sort()
+    if sa != sb:
+        raise TypeError(f"eq/ne operand sort mismatch: {sa} vs {sb}")
+    if sa == TVLInt:
+        return _EQ_NE_INT[op](a, b)
+    if sa == TVLStr:
+        return _EQ_NE_STR[op](a, b)
+    if sa == TVLBool:
+        return _EQ_NE_BOOL[op](a, b)
+    raise NotImplementedError(f"eq/ne on sort {sa!r} not supported")
+
+
+def _cmp_order(op, a, b):
+    """Numeric ordering (gt/gte/lt/lte) — int fields only."""
+    sa, sb = a.sort(), b.sort()
+    if sa != sb:
+        raise TypeError(f"ordering op {op!r} operand sort mismatch: {sa} vs {sb}")
+    if sa != TVLInt:
+        raise NotImplementedError(f"ordering op {op!r} only supports int fields, got {sa!r}")
+    return _ORDER[op](a, b)
+
+
+def _exists(x):
+    """Type-dispatched field-presence sense (int / string / bool)."""
+    s = x.sort()
+    if s == TVLInt:
+        return exists_int(x)
+    if s == TVLStr:
+        return exists_str(x)
+    if s == TVLBool:
+        return exists_bool(x)
+    raise NotImplementedError(f"exists on sort {s!r} not supported")
 
 
 def compile_expr(expr, ctx: CompileContext):
@@ -134,10 +172,12 @@ def compile_expr(expr, ctx: CompileContext):
             return tvl_or(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "not":
             return tvl_not(compile_expr(expr[1], ctx))
-        if op in _BINARY:
-            return _BINARY[op](compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op == "eq" or op == "ne":
+            return _cmp_eq(op, compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
+        if op in ("gt", "gte", "lt", "lte"):
+            return _cmp_order(op, compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
         if op == "exists":
-            return exists_int(compile_expr(expr[1], ctx))
+            return _exists(compile_expr(expr[1], ctx))
         if op == "between":
             return tvl_between(
                 compile_expr(expr[1], ctx), compile_expr(expr[2], ctx), compile_expr(expr[3], ctx)
