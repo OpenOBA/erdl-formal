@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] - 2026-09-04
+
+### Added
+
+- **`var` 节点（`$`/`$.path` 上下文变量）编码**：`CompileContext.var(path)` 返回自由 TVLInt 变量（spec §5.3 未声明 `$` 命名空间类型，默认 int，与未定型 field 一致）；`compiler.py` 补 `["var", path]` 路由。至此 34 节点中 33 个已编码，仅余 `epoch_ms`。
+- 2 个测试（`test_var_node_is_free_int_variable` / `test_var_node_can_fire`）。
+
 ## [0.1.8] - 2026-09-04
 
 ### Fixed

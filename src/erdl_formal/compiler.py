@@ -112,6 +112,19 @@ class CompileContext:
             self._fields[path] = Const(f"field[{path}]", self._sort(c.type if c else "int"))
         return self._fields[path]
 
+    def var(self, path):
+        """Context variable (var node; '$' or '$.path') — a free TVL variable.
+
+        spec §5.3 defines var(v) = Def(ctx.$[v]) with no declared type, and the
+        verification schema (field-contracts) has no '$' entries, so the type
+        defaults to int (same fallback as an untyped field). var is currently
+        unused in rules; when it is, the '$' namespace needs a type source.
+        """
+        key = f"$[{path}]"
+        if key not in self._fields:
+            self._fields[key] = Const(f"var[{path}]", self._sort("int"))
+        return self._fields[key]
+
     def array_element(self, path, i):
         key = f"{path}[{i}]"
         if key not in self._fields:
@@ -194,6 +207,8 @@ def compile_expr(expr, ctx: CompileContext):
         op = expr[0]
         if op == "field":
             return ctx.field(expr[1])
+        if op == "var":
+            return ctx.var(expr[1])
         if op == "lit":
             return _lit(expr[1])
         if op == "and":

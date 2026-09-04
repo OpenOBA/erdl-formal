@@ -91,6 +91,20 @@ def test_array_element_is_raw_sort():
     assert ctx.array_element("approvers", 0).sort() == BoolSort()
 
 
+def test_var_node_is_free_int_variable():
+    from erdl_formal.tvl import TVLInt
+    s = Schema()
+    ctx = CompileContext(s)
+    v = ctx.var("$.amount")
+    assert v.sort() == TVLInt  # free TVLInt (Def | Missing), defaults to int
+
+
+def test_var_node_can_fire():
+    s = Schema()
+    # $.amount > 100 is satisfiable (the var can be any int)
+    assert can_fire(["gt", ["var", "$.amount"], ["lit", 100]], s) is True
+
+
 def _approval_schema():
     s = Schema()
     s.add(FieldContract(field="approvers", type="array", element_type="bool", cardinality=3))
