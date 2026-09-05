@@ -19,4 +19,4 @@
 | `CODE_OF_CONDUCT.md` | Contributor Covenant v2.1 |
 | `style_guide.md` | Code/comment/commit conventions |
 
-> Entry: `../README.en.md` (English) / `../README.md` (中文)
+> Entry: `../README.md` (English) / `../README.zh-CN.md` (中文)

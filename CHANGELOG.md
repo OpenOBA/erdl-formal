@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **文档如实化 EvalError/E12**：SMT 内核无 EvalError 数据构造，除零/非数组 aggregate 折叠为 `Missing`（或编译期 `TypeError`）；README 不再宣称「E1–E12 精确语义」（tier≤2 fail-close 属运行时、未建模）。
 - semantics.md 字面量措辞：定点小数以 `float`/`Fraction`/`Decimal` 进入，非「小数字符串」。
 - 终审文档对齐：`semantics.en.md` / `tvl-encoding` / `field-contracts` 双语同步（去掉未实现的 `rational` 类型、补字符串排序映射、修 style/branch 不一致）。
+- 英文 README 设为默认（`README.md`），中文移 `README.zh-CN.md`；README 头加版本徽章。
 
 ## [0.1.16] - 2026-09-05
 

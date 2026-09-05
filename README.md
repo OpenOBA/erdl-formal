@@ -1,30 +1,32 @@
 # erdl-formal
 
-ERDL 表达内核的形式化验证器 —— 用 Z3 证明规则在所有输入下的安全性
+[![Version](https://img.shields.io/badge/version-v0.1.17-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
 
-确定性有两种：测试覆盖的确定性，和数学证明的确定性。erdl-formal 提供后者。
+A formal verifier for the ERDL expression kernel — proving rule safety over all inputs with Z3.
 
->"erdl-formal 形式化验证了 ERDL v2.1 的表达内核与求值语义（§5、§7、附录 A），覆盖 34 节点和 E1–E12 约束。规范的其他层面（文档结构、gloss 渲染、集成模式）通过测试向量与工程验证保障。"
+There are two kinds of determinism: the determinism tests cover, and the determinism mathematics proves. erdl-formal provides the latter.
 
-## 为什么是现在：LLM 有蛮力，没方向
+>"erdl-formal formally verifies ERDL v2.1's expression kernel and evaluation semantics (§5, §7, Appendix A), covering all 34 nodes and the E1–E12 constraints. The spec's other layers (document structure, gloss rendering, integration modes) are guaranteed by test vectors and engineering verification."
 
-LLM 是概率性的：同一个输入，两种回答。把企业决策交给概率分布，审计迟早会问——「这个决定，依据是什么？」
+## Why now: LLMs have brute force. They don't have direction.
 
-行业共识正在成形：**LLM 负责理解，规则负责裁决**——在 Agent 前面，必须有一层确定性规则引擎。但规则引擎的「确定性」通常靠单元测试背书，而测试只能证明**测过的输入**是对的。
+LLMs are probabilistic: same input, different answers. Hand enterprise decisions to a probability distribution, and the auditors will eventually ask — *"on what basis was this decision made?"*
 
-金融、保险、政务这类强监管行业，审计只问一个问题：
+The industry is converging on an answer: **let the LLM understand; let a deterministic rule engine decide.** But a rule engine's "determinism" is usually underwritten by unit tests — and tests only prove the inputs you happened to write.
 
-> **这条规则，对所有输入都成立吗？**
+In regulated industries — finance, insurance, government — the audit question is singular:
 
-抽样测试回答不了这个问题，回答只能是证明。Cedar Analysis 在 AWS 内部验证了这条路（Lean 形式化 + SMT 符号分析）；erdl-formal 对 ERDL 表达内核做同样的事——把「确定性」从**抽样测试**升到**全量证明**。
+> **Does this rule hold for every input?**
 
-- **Cedar Analysis**：AWS 内部使用，Lean + SMT，不对外开放，只服务 AWS 自己的策略语言。
-- **OPA / Rego**：无形式化语义，「实现即规范」。
-- **erdl-formal**：开源、34 节点全覆盖、ERDL 特有语义（钱、时间、决策对象、双向 gloss）。
+Sampled tests can't answer that. Only a proof can. Cedar Analysis proved this approach works inside AWS (Lean formalization + SMT symbolic analysis). erdl-formal does the same for the ERDL expression kernel — lifting determinism from **sampled testing** to **exhaustive proof**.
 
-## 30 秒，看一个证明
+- **Cedar Analysis**: used inside AWS, Lean + SMT, not open to the public, serving only AWS's own policy language.
+- **OPA/Rego**: no formal semantics — "the implementation is the spec."
+- **erdl-formal**: open source, 34-node full coverage, ERDL-specific semantics (money, time, decision objects, bidirectional gloss).
 
-G3 密级访问控制：文件密级 > 操作员密级 → DENY。要证明这条规则**可达**，且缺失字段**不绕过**（fail-closed）：
+## One proof in 30 seconds
+
+The G3 classification gate: file classification > operator classification → DENY. We want to prove the rule is both **reachable** and **fail-closed** (a missing field never opens a bypass):
 
 ```python
 from erdl_formal.field_contracts import FieldContract, Schema
@@ -37,11 +39,12 @@ schema.add(FieldContract(field="op_cls", type="int"))
 # when: file_cls > op_cls  →  DENY
 rule = ["gt", ["field", "file_cls"], ["field", "op_cls"]]
 
-# 一条断言，同时证明两条性质：
-# 1) 可达 —— 字段都在时，密级更高确实触发拦截
-# 2) fail-closed —— 字段缺失不绕过。这条性质取决于文档的未命中兜底决策
-#    （default_decision）：兜底为 DENY 时，op_cls 缺失→守卫折叠为假→兜底仍拒绝，
-#    不绕过；兜底为 ALLOW（resolution 默认）时，缺失即放行——规则 fail-open。
+# One assertion, two properties at once:
+# 1) reachable — with both fields present, a higher classification fires the block
+# 2) fail-closed — a missing field never opens a bypass. This depends on the
+#    document's unmatched fallback (default_decision): under a DENY fallback the
+#    silenced guard still denies; under the ALLOW fallback (resolution default)
+#    the missing field falls through to ALLOW — the rule fails open.
 assert always_denies(
     rule, schema,
     premises=["file_cls", "op_cls"],
@@ -56,117 +59,114 @@ assert not always_denies(
 )
 ```
 
-背后没有测试用例，没有抽样。Z3 在**所有整数**的空间里搜索违反性质的输入：找到，返回**可回放的具体反例**（能丢回真实引擎复核）；找不到，UNSAT——性质对全量输入成立，证毕。
+No test cases. No sampling. Z3 searches the space of **all integers** for an input violating the property: if one exists, you get a **concrete, replayable counterexample** (re-checkable against the real engine); if not, UNSAT — the property holds for every input. QED.
 
-## 能证明什么
+## What you can prove
 
-| 性质 | 含义 | 来源 |
+| Property | Meaning | Origin |
 |---|---|---|
-| always-denies | 守卫可满足即拦截；配合 `default_decision` 判定字段缺失是否绕过 | Cedar + E11 |
-| subsumption / equivalence / disjointness | 蕴含 / 等价 / 互斥 | Cedar |
-| override-soundness | override 仅 DENY→ALLOW 方向（不覆盖到更不安全态）| **ERDL 特有** |
-| ring-respect | 高环 DENY 覆盖低环 ALLOW（ring 顺序在 DENY 方向被尊重）| **ERDL 特有** |
-| emergency-shortcut | EMERGENCY_HALT 命中即短路 | **ERDL 特有** |
+| always-denies | fires whenever its guard can — whether a missing field opens a bypass is resolved against `default_decision` | Cedar + E11 |
+| subsumption / equivalence / disjointness | implication / equivalence / mutual exclusion | Cedar |
+| override-soundness | overrides go DENY→ALLOW only (never toward a less-safe state) | **ERDL-specific** |
+| ring-respect | a higher-ring DENY overrides a lower-ring ALLOW (ring order honored in the DENY direction) | **ERDL-specific** |
+| emergency-shortcut | EMERGENCY_HALT short-circuits the moment it fires | **ERDL-specific** |
 
-表达式层性质（`always_denies` / `subsumes` / …）用「把反面写成约束、判 unsat」的方式证明；ERDL 特有的三条裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut`）由 `resolution_smt.py` 把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，**对全部规则集**判 UNSAT——不是抽样，是全量证明。任何 SAT 反例都是可回放真实引擎复核的具体规则集——证明 + 差分，双保险。
+Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the three ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **all rule-sets** — not sampling, a full proof. Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
-## 34/34 节点覆盖，E1–E12 语义
+## 34/34 nodes, E1–E12 semantics
 
-- **34 节点全部有 SMT 编码**：取值 / 逻辑 / 比较 / 集合 / 字符串 / 存在量纲 / 量词 / 算术 / 时间 / 聚合（比较与存在按字段类型分派：int / string / bool；`epoch_ms` 支持 date-only 与 ISO 8601 带时分秒/时区偏移）。
-- 关键语义不是「大致对」，是**逐位精确**：
-  - **E2** 定点小数：scale=14 + half-even——钱，不允许 `0.1 + 0.2` 式漂移；
-  - **E8** 量词空数组折叠：反空洞真，`all([])` 是假不是真；
-  - **E11** 三值逻辑：字段缺失在叶子处折叠为假（非 Kleene）；「缺失是否 fail-open」由文档兜底决策决定（见 `always_denies` 的 `default_decision`）；
-  - **E10** NFC 归一化；**E12** 求值错误折叠为 `Missing`（tier≤2 fail-close 属运行时行为，不在内核建模）。
+- **All 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (comparison and existence dispatch by field type: int / string / bool; `epoch_ms` supports date-only and ISO 8601 datetime with time / offset).
+- The hard semantics aren't "roughly right" — they are **bit-exact**:
+  - **E2** fixed-point decimals: scale=14 + half-even — money is not allowed `0.1 + 0.2` drift;
+  - **E8** quantifier empty-array folding: anti-vacuous-truth — `all([])` is false, not true;
+  - **E11** three-valued logic: missing fields collapse to false at the leaves (not Kleene); whether a missing field fails open is resolved by the document fallback (see `always_denies`'s `default_decision`);
+  - **E10** NFC normalization; **E12** evaluation errors collapse to `Missing` (tier≤2 fail-close is runtime behavior, not modeled in the kernel).
 
-## 独立验证者：三重独立，逐字节对拍
+## Independent verifier: three-way, byte-for-byte
 
-验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.md)）编码，零依赖任何 ERDL 引擎实现，与 [`erdl`](https://www.npmjs.com/package/@openoba/erdl)（TS 引擎）、[`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors)（冻结向量）构成三重独立：
+A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with [`erdl`](https://www.npmjs.com/package/@openoba/erdl) (the TS engine) and [`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors) (frozen vectors):
 
-| 交叉验证 | 对象 | 结果 |
+| Cross-check | Pair | Result |
 |---|---|---|
-| 定点小数 | `fixed_point.py` ↔ erdl `fixed-point.js` | 逐字节一致 |
-| 裁决语义 | `resolution.py` ↔ `resolution_smt.py`（Z3 模型；语义对齐 erdl-landing `evaluator.ts`） | 穷举 + 随机差分（`test_resolution_smt.py`）|
-| 算术向量 | ↔ erdl-vectors V-ENGINE | 7/7 |
-| 日历向量 | ↔ erdl-vectors V-ENGINE | 6/6 |
-| G3 反例回放 | `tvl.py` ↔ erdl engine | 逐场景一致 |
+| Fixed-point | `fixed_point.py` ↔ erdl `fixed-point.js` | byte-identical |
+| Resolution | `resolution.py` ↔ `resolution_smt.py` (Z3 model; semantics aligned to erdl-landing `evaluator.ts`) | exhaustive + random differential (`test_resolution_smt.py`) |
+| Arithmetic vectors | ↔ erdl-vectors V-ENGINE | 7/7 |
+| Calendar vectors | ↔ erdl-vectors V-ENGINE | 6/6 |
+| G3 counterexample replay | `tvl.py` ↔ erdl engine | scenario-identical |
 
-**Measurements, not endorsements.** 三个独立构建的系统逐字节一致——说明规范足够精确，能支撑独立实现的精确复现。
+**Measurements, not endorsements.** Three independently built systems agreeing byte-for-byte means the spec is precise enough to sustain exact independent reimplementation.
 
-## 与 Cedar / OPA 的差异
+## How it differs from Cedar / OPA
 
-| 维度 | Cedar Analysis | OPA / Rego | **erdl-formal** |
+| Dimension | Cedar Analysis | OPA / Rego | **erdl-formal** |
 |---|---|---|---|
-| 形式化 | ✅ Lean + SMT（业界标杆，闭源） | ❌ 无形式化语义（实现即规范） | ✅ SMT（Z3），开源 |
-| 定点小数（钱） | 小数扩展插件 | float64 丢精度 | ✅ scale=14 + half-even |
-| 时间 / 日历 | — | — | ✅ UTC 日历（days_between / date_add / date_part / 月末） |
-| 聚合 | — | — | ✅ aggregate（count / sum / avg / min / max） |
-| 量词 | — | — | ✅ all / any / none（E8 空数组折叠） |
-| 决策对象 | 策略 ID | 日志无签名 | ✅ 富 DO + 哈希链 |
-| 自然语言 | 单向（NL→策略） | 单向 | ✅ 确定性 gloss 锚定回译（双向） |
+| Formal verification | ✅ Lean + SMT (the field's benchmark, closed) | ❌ no formal semantics — the implementation *is* the spec | ✅ SMT (Z3), open source |
+| Fixed-point (money) | decimals only via extension plugin | float64 loses precision | ✅ scale=14 + half-even |
+| Time / calendar | — | — | ✅ UTC calendar (days_between / date_add / date_part / month-end) |
+| Aggregation | — | — | ✅ aggregate (count / sum / avg / min / max) |
+| Quantifiers | — | — | ✅ all / any / none (E8 empty-array fold) |
+| Decision object | policy IDs only | unsigned logs | ✅ rich DO + hash chain |
+| Natural language | one-way (NL→policy) | one-way | ✅ deterministic gloss, anchored round-trip (two-way) |
 
-差异不是「更形式化」——Cedar 的形式化栈是业界标杆。差异在**被形式化的东西**：ERDL 是为钱、时间、聚合、量词、决策对象与双向自然语言而生的企业规则内核，这些（表中 `—` 行）在 Cedar / OPA 的世界里不存在。
+The difference is not "more formal" — Cedar's stack is the benchmark, and we say so. The difference is **what gets formalized**: ERDL is an enterprise rule kernel built for money, time, aggregation, quantifiers, decision objects, and two-way natural language — none of which exist in the Cedar / OPA world (the `—` rows above).
 
-## 架构
+## Architecture
 
 ```
-ERDL 规则 (S-expression)
+ERDL rule (S-expression)
    │
-   ▼  compiler.py（符号编译器：schema 驱动字段类型 + 量词索引展开）
-Z3 TVL 表达式（TVL(τ) = Def | Missing，叶子折叠）
+   ▼  compiler.py (symbolic compiler: schema-driven field typing + quantifier index unfolding)
+Z3 TVL expressions (TVL(τ) = Def | Missing, leaf collapse)
    │
-   ▼  properties.py（表达式层性质验证）/ resolution.py（裁决参考模型）
-     / resolution_smt.py（裁决层 SMT 全量证明）
-sat / unsat + 反例（回放真实引擎交叉验证）
+   ▼  properties.py (property checks) / resolution.py (resolution reference model)
+sat / unsat + counterexample (replayed against the real engine)
 ```
 
-## 安装
+## Installation
 
-**用户**（从 PyPI，一条命令）：
+**Users** (from PyPI, one command):
 
 ```bash
 pip install erdl-formal
 ```
 
-**开发者**（从源码，可编辑安装，改代码即时生效）：
+**Developers** (from source, editable install, changes take effect immediately):
 
 ```bash
 git clone https://github.com/OpenOBA/erdl-formal.git
 cd erdl-formal
-python -m pip install -e ".[dev]"   # Python ≥3.11（3.14 开发），z3-solver ≥4.13（5.1.0 验证）
+python -m pip install -e ".[dev]"   # Python ≥3.11 (developed on 3.14), z3-solver ≥4.13 (verified on 5.1.0)
 ```
 
-**从源码构建分发包**（wheel + sdist，供发布 / 离线分发）：
+**Build a distribution** (wheel + sdist, for release / offline distribution):
 
 ```bash
 python -m pip install build
-python -m build        # 产出 dist/erdl_formal-<version>-py3-none-any.whl + .tar.gz
+python -m build        # produces dist/erdl_formal-<version>-py3-none-any.whl + .tar.gz
 ```
 
-## 快速上手
+## Quick start
 
 ```bash
-pytest                               # 全绿
-python examples/verify_g3.py         # 验证 G3 密级规则（可达 + fail-closed）
-python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
+pytest                               # all passing
+python examples/verify_g3.py         # prove the G3 classification rule (reachable + fail-closed)
+python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen vectors
 ```
 
-## 文档
+## Documentation
 
-- `docs/semantics.md` — 34 节点指称语义
-- `docs/tvl-encoding.md` — 三值逻辑 SMT 编码规范
-- `docs/field-contracts.md` — 验证 schema 契约
-- `docs/DEVELOPER-GUIDE.md` — 二开指南（架构 / 加节点 / 加性质 / API / 构建发布）
+- `docs/semantics.en.md` — denotational semantics for all 34 nodes
+- `docs/tvl-encoding.en.md` — three-valued logic SMT encoding
+- `docs/field-contracts.en.md` — verification schema contracts
+- `docs/DEVELOPER-GUIDE.en.md` — developer guide (architecture / adding nodes / properties / API / build & publish)
 
-> 英文版：`docs/*.en.md`
+## Contributing & security
 
-## 贡献与安全
-
-- `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）
-- `SECURITY.md` — 漏洞私下报，不开公开 issue
-- `CHANGELOG.md` — 变更记录（Keep a Changelog）
+- `CONTRIBUTING.md` — contribution process (issue-first, review)
+- `SECURITY.md` — report vulnerabilities privately, no public issue
+- `CHANGELOG.md` — changelog (Keep a Changelog)
 - `CODE_OF_CONDUCT.md` / `style_guide.md`
 
-## 许可证
+## License
 
 Apache-2.0 · © 2026 深圳市秒镜科技有限公司 (Shenzhen Miaojing Technology Co., Ltd.)
