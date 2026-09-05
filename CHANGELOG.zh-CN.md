@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-09-05
+
+### Fixed
+
+- **catch-all（空条件）ALLOW 永不复写显式 DENY（放松方向）**：`resolution.py` / `resolution_smt.py` 之前只在 DENY 方向加了守护（catch-all DENY 永不覆盖显式 ALLOW），ALLOW 方向敞开——带 `override: critical/high` 的 catch-all ALLOW 会跨 ring 改写显式 DENY，即「兜底放行吞噬显式拦截」。现 ALLOW 分支补对称的 catch-all 守护（Z3 `allow_relax` 合取加 `Not(catch_all)`），对齐 erdl-landing `evaluator.ts` 与 §7.1 第 6 条。
+
+### Added
+
+- **`catch_all_neutral` 裁决层性质**：catch-all 规则不得改写已确立的决议（双向；EMERGENCY_HALT 除外，它是终止性的 fail-closed 刹车）。补上「放松方向零性质覆盖」的缺口——此前 `ring_respect` / `override_soundness` 只守 DENY（收紧）方向。
+
 ## [0.1.17] - 2026-09-05
 
 ### Added

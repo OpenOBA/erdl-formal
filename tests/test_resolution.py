@@ -112,6 +112,24 @@ def test_catch_all_deny_never_overrides_allow():
     assert resolve(rules) == "ALLOW"
 
 
+def test_catch_all_allow_never_overrides_deny():
+    # §7.1 item 6: a catch-all ALLOW never overrides an explicit DENY, even
+    # with override=critical and across rings (the relax direction).
+    rules = [
+        _r("explicit-deny", "DENY", 10, ring=0),
+        _r("catchall-allow", "ALLOW", 20, ring=3, override="critical", catch_all=True),
+    ]
+    assert resolve(rules) == "DENY"
+
+
+def test_catch_all_allow_acts_as_fallback_when_nothing_set():
+    # A catch-all ALLOW is still the fallback when no explicit rule matches.
+    rules = [
+        _r("catchall-allow", "ALLOW", 20, ring=3, override="critical", catch_all=True),
+    ]
+    assert resolve(rules) == "ALLOW"
+
+
 def test_catch_all_sorts_last_within_ring():
     # v1.3: catch-all rules sort last within a ring, so an explicit rule wins
     # even at equal priority.

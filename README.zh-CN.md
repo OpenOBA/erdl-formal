@@ -69,8 +69,9 @@ assert not always_denies(
 | override-soundness | override 仅 DENY→ALLOW 方向（不覆盖到更不安全态）| **ERDL 特有** |
 | ring-respect | 高环 DENY 覆盖低环 ALLOW（ring 顺序在 DENY 方向被尊重）| **ERDL 特有** |
 | emergency-shortcut | EMERGENCY_HALT 命中即短路 | **ERDL 特有** |
+| catch-all-neutral | 空条件（catch-all）规则不得改写已确立的决议（双向；EMERGENCY_HALT 除外）| **ERDL 特有** |
 
-表达式层性质（`always_denies` / `subsumes` / …）用「把反面写成约束、判 unsat」的方式证明；ERDL 特有的三条裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut`）由 `resolution_smt.py` 把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，**对全部规则集**判 UNSAT——不是抽样，是全量证明。任何 SAT 反例都是可回放真实引擎复核的具体规则集——证明 + 差分，双保险。
+表达式层性质（`always_denies` / `subsumes` / …）用「把反面写成约束、判 unsat」的方式证明；ERDL 特有的裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`）由 `resolution_smt.py` 把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，**对全部规则集**判 UNSAT——不是抽样，是全量证明。任何 SAT 反例都是可回放真实引擎复核的具体规则集——证明 + 差分，双保险。
 
 ## 34/34 节点覆盖，E1–E12 语义
 

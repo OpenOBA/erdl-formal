@@ -48,6 +48,7 @@ from erdl_formal.resolution_smt import (
     OVR_NORMAL,
     REQUEST_HUMAN,
     ResolutionFold,
+    catch_all_neutral,
     emergency_shortcut,
     override_soundness,
     ring_respect,
@@ -102,6 +103,9 @@ def _fold_sorted_py(rules):
             if not enables and not is_term and not is_acc:
                 continue
         if d == "ALLOW":
+            # §7.1 item 6: catch-all ALLOW never overrides an already-set decision
+            if r.get("catch_all") and final is not None:
+                continue
             if enables and final == "DENY":
                 final, fring = "ALLOW", ring
                 skip = ring
@@ -236,6 +240,12 @@ def test_emergency_shortcut_holds():
         assert holds, f"emergency-shortcut violated at n={n}: {model}"
 
 
+def test_catch_all_neutral_holds():
+    for n in (2, 3, 4):
+        holds, model = catch_all_neutral(n)
+        assert holds, f"catch-all-neutral violated at n={n}: {model}"
+
+
 # --- non-vacuity: each property's antecedent is reachable ----------------
 
 
@@ -283,3 +293,13 @@ def test_emergency_shortcut_antecedent_reachable():
         lambda st: st["effective"] & st["has_before"] & (st["final_before"] == EMERGENCY_HALT),
     )
     assert terminal
+
+
+def test_catch_all_neutral_antecedent_reachable():
+    # A catch-all rule genuinely reaches an already-decided state (in both
+    # directions), so the property is non-vacuous.
+    reachable = _antecedent_sat(
+        2,
+        lambda st: st["effective"] & st["has_before"] & st["catch_all"],
+    )
+    assert reachable

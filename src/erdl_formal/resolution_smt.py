@@ -173,7 +173,7 @@ class ResolutionFold:
             )
             effective = And(process, gate_pass)
 
-            allow_relax = And(dec == ALLOW, enables, has, fin == DENY)
+            allow_relax = And(dec == ALLOW, enables, has, fin == DENY, Not(catch_all))
             allow_init = And(dec == ALLOW, Not(has))
             halt = dec == EMERGENCY_HALT
             deny_set = And(dec == DENY, Or(Not(has), fin == DENY))
@@ -270,7 +270,8 @@ def ring_respect(n=4):
 
     Rings give authority ordering: a *higher*-ring explicit-condition DENY must
     tighten a lower-ring ALLOW. A catch-all (empty-condition) DENY is a v1.3
-    safety exception and never overrides an ALLOW — so it is excluded here.
+    safety exception and never overrides an ALLOW — so it is excluded here
+    (its neutrality is asserted separately by ``catch_all_neutral``).
     """
     def bad(steps):
         return [And(st["effective"], st["has_before"], st["dec"] == DENY,
@@ -278,6 +279,27 @@ def ring_respect(n=4):
                     st["final_before"] == ALLOW,
                     st["ring"] > st["final_ring_before"],
                     st["final_after"] != DENY) for st in steps]
+    return _prove(n, bad)
+
+
+def catch_all_neutral(n=4):
+    """§7.1 item 6: a catch-all (empty-condition) rule never changes an established decision, in either direction.
+
+    A fallback rule carries the weak, general intent of "all other cases"; it
+    MUST NOT rewrite the strong, specific decision established by an
+    explicit-condition rule. This is the property that closes the "relax
+    direction" gap ANP2 flagged: ``ring_respect`` and ``override_soundness``
+    both watch the tighten (DENY) direction, while the relax direction
+    (catch-all ALLOW overriding an explicit DENY) was previously unproven.
+
+    EMERGENCY_HALT is the one deliberate exception: it is the terminal
+    fail-closed brake and short-circuits regardless of condition-shape
+    (asserted separately by ``emergency_shortcut``); it is excluded here.
+    """
+    def bad(steps):
+        return [And(st["effective"], st["has_before"], st["catch_all"],
+                    st["dec"] != EMERGENCY_HALT,
+                    st["final_after"] != st["final_before"]) for st in steps]
     return _prove(n, bad)
 
 

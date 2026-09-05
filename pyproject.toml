@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "erdl-formal"
-version = "0.1.17"
+version = "0.1.18"
 description = "SMT-based (Z3) formal verification for the ERDL expression kernel — proving rules safe over all inputs."
 readme = "README.md"
 requires-python = ">=3.11"

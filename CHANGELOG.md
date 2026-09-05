@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] - 2026-09-05
+
+### Fixed
+
+- **Catch-all (empty-condition) ALLOW never overrides an explicit DENY (relax direction)**: `resolution.py` / `resolution_smt.py` guarded the DENY direction (catch-all DENY never overrides explicit ALLOW) but left the ALLOW direction open — a catch-all ALLOW with `override: critical/high` rewrote an explicit DENY across rings, the "fallback swallowing an explicit block". The ALLOW branch now carries a symmetric catch-all guard (and the Z3 `allow_relax` conjunct gained `Not(catch_all)`). Aligned with erdl-landing `evaluator.ts` and §7.1 item 6.
+
+### Added
+
+- **`catch_all_neutral` resolution property**: a catch-all rule never rewrites an established decision in either direction (EMERGENCY_HALT excepted, as it is the terminal fail-closed brake). This closes the "relax direction has zero property coverage" gap — previously `ring_respect` / `override_soundness` watched only the tighten (DENY) direction.
+
 ## [0.1.17] - 2026-09-05
 
 ### Added

@@ -60,6 +60,12 @@ def resolve(rules):
                     continue
 
             if d == "ALLOW":
+                # v1.3 / §7.1 item 6: a catch-all (empty-condition) ALLOW never
+                # overrides an explicit-condition decision, regardless of
+                # override — a fallback ALLOW only takes effect when nothing
+                # is set yet (symmetric with the DENY-branch guard below).
+                if r.get("catch_all") and final is not None:
+                    continue
                 if override_enables(r) and final == "DENY":
                     # override DENY→ALLOW (cross-ring, safe relax)
                     final, final_ring = "ALLOW", ring
