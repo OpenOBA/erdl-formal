@@ -250,7 +250,7 @@ def _prove(n, bad_terms):
 
 
 def override_soundness(n=4):
-    """override 仅 DENY→ALLOW 方向：同环 override DENY 不把 ALLOW 收紧为 DENY。
+    """override only relaxes DENY→ALLOW: a same-ring override DENY never tightens ALLOW into DENY.
 
     The only way a DENY tightens ALLOW is ``ring > final_ring`` (ring order) or
     ``ring == final_ring and not override_enables`` — so an override-enabled
@@ -266,7 +266,7 @@ def override_soundness(n=4):
 
 
 def ring_respect(n=4):
-    """ring 顺序在 DENY 方向被尊重：高环**显式** DENY 覆盖低环 ALLOW（高环权威）。
+    """ring order is honored in the DENY direction: a higher-ring *explicit* DENY overrides a lower-ring ALLOW.
 
     Rings give authority ordering: a *higher*-ring explicit-condition DENY must
     tighten a lower-ring ALLOW. A catch-all (empty-condition) DENY is a v1.3
@@ -282,7 +282,7 @@ def ring_respect(n=4):
 
 
 def emergency_shortcut(n=4):
-    """EMERGENCY_HALT 命中即短路，且为终态不可被后续规则改写。"""
+    """EMERGENCY_HALT short-circuits when hit, and is terminal (no later rule can rewrite it)."""
     def bad(steps):
         hit_not_final = [And(st["effective"], st["dec"] == EMERGENCY_HALT,
                              st["final_after"] != EMERGENCY_HALT) for st in steps]

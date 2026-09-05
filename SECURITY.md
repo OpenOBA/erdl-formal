@@ -39,4 +39,4 @@ against the spec's semantics; it does **not** enforce anything at runtime.
 
 | Version | Supported |
 |---|---|
-| unreleased (`main`) | ✅ |
+| unreleased (`master`) | ✅ |

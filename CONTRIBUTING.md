@@ -14,7 +14,7 @@ expression kernel — it proves properties of ERDL rules using SMT (Z3).
 
 ### Bug reports
 
-Confirm against the latest `main`, then check existing issues. Include:
+Confirm against the latest `master`, then check existing issues. Include:
 
 - a minimal reproduction (rule + schema + expected vs actual)
 - version / commit

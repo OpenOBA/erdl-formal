@@ -11,7 +11,7 @@ ERDL v2.0's `EntityFieldContract` (field/display_name/type/description) serves r
 ```
 FieldContract {
   field: str                 # field path (e.g. tool.args.amount)
-  type: 'int' | 'rational' | 'string' | 'bool' | 'array'
+  type: 'int' | 'string' | 'bool' | 'array'   # money = 'int' at scale-14 (no separate rational type)
   element_type: str | None   # element type for 'array'
   cardinality: int | None    # array cardinality upper bound (premise for SMT index expansion)
   optional: bool             # whether the field may be absent (E11; default true)

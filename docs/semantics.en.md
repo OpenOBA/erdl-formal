@@ -9,11 +9,10 @@ This document defines the **denotational semantics** of the 34 nodes of the ERDL
 ```
 τ ∈ { Int, Rational, String, Bool, Array<τ>, Set<τ> }
 V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined sentinel
-E  = EvalError                                   # E12 evaluation error (distinct from Missing)
 ```
 
 - `Rational` = high-precision bounded rational (128-bit numerator/denominator); intermediate computation is exact, only output nodes round to scale=14 + half-even (E2).
-- `Missing` = field absent / undefined; `EvalError` = evaluation error (division by zero, type-mismatched arithmetic).
+- `Missing` = field absent / undefined; `EvalError` (E12 evaluation error, division by zero etc.) collapses to `Missing` in this SMT kernel (see the E3/E12 note).
 
 ## 2. Node denotation (10 groups)
 
@@ -25,7 +24,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 |---|---|
 | `field(f)` | `Def(ctx[f])` if `f ∈ ctx`; otherwise `Missing` |
 | `var(v)` | `Def(ctx.$[v])` (`$` / `$.path`); `Missing` if absent |
-| `literal(c)` | `Def(c)` (fixed-point decimal string → Rational / NFC string / Bool) |
+| `literal(c)` | `Def(c)` (fixed-point decimal (`float`/`Fraction`/`Decimal`) → Rational (scale-14) / NFC string / Bool) |
 
 ### Logic (3, two-valued)
 
@@ -66,7 +65,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 
 ### Arithmetic (5, E2 fixed-point rational)
 
-`add/sub/mul/div`: exact rational arithmetic (128-bit); `div` by zero → `EvalError`. `round`: half-even rounding. **No rounding in intermediates; only output nodes scale=14 + half-even**.
+`add/sub/mul/div`: exact rational arithmetic (128-bit); `div` by zero → `Missing` (SMT approximation of `EvalError`). `round`: half-even rounding. **No rounding in intermediates; only output nodes scale=14 + half-even**.
 
 ### Time (5)
 
@@ -74,7 +73,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 
 ### Aggregate (1)
 
-`aggregate(fn, over)`: `count/sum` over an empty array → `Some(0)`; `avg/min/max` over an empty array → `None` (folds to false in condition context). Non-array `over` → `EvalError`.
+`aggregate(fn, over)`: `count/sum` over an empty array → `Some(0)`; `avg/min/max` over an empty array → `None` (folds to false in condition context). Non-array `over` → compile-time `TypeError` (fail-fast).
 
 ## 3. E constraints (semantic layer)
 
@@ -82,7 +81,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 |---|---|
 | E1 | Pure functions (no side effects / no clock); within/rate state lives outside the tree, in GuardStateManager |
 | E2 | Fixed-point scale=14 + half-even; 128-bit rational intermediates |
-| E3/E12 | EvalError → tier≤2 fail-close / tier 3–5 fold to false |
+| E3/E12 | EvalError → tier≤2 fail-close / tier 3–5 fold to false (**runtime** tier fold; this SMT kernel approximates `EvalError` as `Missing` = fold-false; tier≤2 fail-close is not modeled in the kernel) |
 | E4 | Resource limits (Grade A: tree depth ≤6 / nodes ≤64 / arrays ≤10000) |
 | E5 | Type checking at load time |
 | E8 | Quantifier over empty array is always false (all/none are deliberate safe deviations) |

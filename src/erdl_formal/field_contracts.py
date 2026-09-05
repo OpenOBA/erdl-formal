@@ -28,7 +28,7 @@ from dataclasses import dataclass, field
 @dataclass(frozen=True)
 class FieldContract:
     field: str
-    type: str  # 'int' | 'rational' | 'string' | 'bool' | 'array'
+    type: str  # 'int' | 'string' | 'bool' | 'array'  (money = 'int' at scale-14; no separate 'rational' type)
     element_type: str | None = None  # for 'array': element type
     cardinality: int | None = None  # for 'array': max length (schema premise)
     optional: bool = True  # field may be missing (E11)

@@ -17,13 +17,13 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 
 **比较节点**（eq/ne/gt/gte/lt/lte）：任一操作数 `Missing` → `Def(false)`。
 
-**算术节点**（add/sub/mul/div/round）：任一操作数 `Missing` → `EvalError`（条件上下文折叠 `false`；值上下文 → E12 tier 折叠）。
+**算术节点**（add/sub/mul/div/round）：任一操作数 `Missing` → `Missing`（`EvalError` 的 SMT 近似；条件上下文折叠 `false`）。
 
 **布尔算子**（and/or/not）：**两值逻辑**——操作数是已折叠的 `Def(true/false)`，undefined 不传播到布尔层。故 `not(字段缺失 == x)` = `not(false)` = `true`。
 
-## 3. E12 tier 折叠
+## 3. E12 tier 折叠（运行时，内核未建模）
 
-`EvalError` → tier≤2 / Guard 缺省 fail-close（DENY）；tier 3–5 折叠为 `false`。
+`EvalError` → tier≤2 / Guard 缺省 fail-close（DENY）；tier 3–5 折叠为 `false`。**本 SMT 内核无 EvalError 数据构造**，除零等 `EvalError` 一律折叠为 `Missing`（等价 tier 3–5 折叠 false）；tier≤2 fail-close 属运行时行为、不在内核建模。
 
 ## 4. not 的 exists 守卫（§11.4）
 
@@ -43,7 +43,7 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 | 规范项 | 代码 |
 |---|---|
 | TVL ADT | `tvl.TVLInt` / `tvl.TVLBool` |
-| 比较折叠 | `tvl.tvl_gt` / `tvl_eq` 等（`_collapse_binary`）；字符串/布尔等值 `tvl_eq_str/ne_str` / `tvl_eq_bool/ne_bool`（`_collapse_str_binary` / `_collapse_bool_binary`）|
+| 比较折叠 | `tvl.tvl_gt` / `tvl_eq` 等（`_collapse_binary`）；字符串/布尔等值 `tvl_eq_str/ne_str` / `tvl_eq_bool/ne_bool`（`_collapse_str_binary` / `_collapse_bool_binary`）；字符串有序比较 `tvl_gt_str/gte_str/lt_str/lte_str`（Unicode 码点序）|
 | 布尔两值 | `tvl.tvl_and` / `tvl_or` / `tvl_not` |
 | 存在性 | `tvl.exists_int` / `exists_str` / `exists_bool`（按字段类型分派，唯一感知字段存在性）|
 | 量词 E8 | `quantifiers.tvl_all` / `tvl_any` / `tvl_none` |

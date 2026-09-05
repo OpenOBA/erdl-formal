@@ -11,7 +11,7 @@ ERDL v2.0 的 `EntityFieldContract`（field/display_name/type/description）服�
 ```
 FieldContract {
   field: str                 # 字段路径（如 tool.args.amount）
-  type: 'int' | 'rational' | 'string' | 'bool' | 'array'
+  type: 'int' | 'string' | 'bool' | 'array'   # 金额 = 'int' + scale-14（无独立 rational 类型）
   element_type: str | None   # array 的元素类型
   cardinality: int | None    # array 的基数上限（SMT 索引展开的前提）
   optional: bool             # 字段可否缺失（E11；默认 true）
