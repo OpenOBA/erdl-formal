@@ -33,6 +33,7 @@ insurance" the README claims for the expression kernel.
 
 from z3 import (
     And,
+    Bool,
     BoolVal,
     Const,
     EnumSort,
@@ -102,6 +103,7 @@ class ResolutionFold:
         self.ring = [Int(f"ring_{i}") for i in range(n)]
         self.prio = [Int(f"prio_{i}") for i in range(n)]
         self.ovr = [Const(f"ovr_{i}", Override) for i in range(n)]
+        self.catch_all = [Bool(f"catch_all_{i}") for i in range(n)]
 
     # -- constraints ------------------------------------------------------
 
@@ -116,14 +118,23 @@ class ResolutionFold:
         return cs
 
     def sorted_premise(self):
-        """Array is in resolve()'s processing order (ring, priority, rank)."""
+        """Array is in resolve()'s processing order.
+
+        Within a ring: catch-all (empty-condition) rules sort LAST, then
+        priority ascending, then override-rank ascending.
+        """
         cs = []
         for i in range(self.n - 1):
             a, b = i, i + 1
             cs.append(self.ring[a] <= self.ring[b])
+            # catch-all sorts last: False (explicit) before True (catch-all)
             cs.append(If(self.ring[a] == self.ring[b],
+                         Or(Not(self.catch_all[a]), self.catch_all[b]), True))
+            cs.append(If(And(self.ring[a] == self.ring[b],
+                             self.catch_all[a] == self.catch_all[b]),
                          self.prio[a] <= self.prio[b], True))
             cs.append(If(And(self.ring[a] == self.ring[b],
+                             self.catch_all[a] == self.catch_all[b],
                              self.prio[a] == self.prio[b]),
                          override_rank(self.ovr[a]) <= override_rank(self.ovr[b]), True))
         return cs
@@ -145,7 +156,7 @@ class ResolutionFold:
 
         steps = []
         for i in range(self.n):
-            dec, ring, ovr = self.dec[i], self.ring[i], self.ovr[i]
+            dec, ring, ovr, catch_all = self.dec[i], self.ring[i], self.ovr[i], self.catch_all[i]
             enables = override_enables(ovr)
 
             # A prior `break` skips every remaining rule of the SAME ring; the
@@ -167,7 +178,7 @@ class ResolutionFold:
             halt = dec == EMERGENCY_HALT
             deny_set = And(dec == DENY, Or(Not(has), fin == DENY))
             deny_tighten = And(
-                dec == DENY, has, fin == ALLOW,
+                dec == DENY, has, fin == ALLOW, Not(catch_all),
                 Or(ring > fring, And(ring == fring, Not(enables))),
             )
             # soft decisions (CORRECT / REQUEST_HUMAN / ESCALATE / NOTIFY)
@@ -204,6 +215,7 @@ class ResolutionFold:
             steps.append({
                 "i": i,
                 "dec": dec, "ring": ring, "ovr": ovr, "enables": enables,
+                "catch_all": catch_all,
                 "effective": effective,
                 "has_before": has,
                 "final_before": fin_before, "final_ring_before": fring_before,
@@ -254,14 +266,15 @@ def override_soundness(n=4):
 
 
 def ring_respect(n=4):
-    """ring 顺序在 DENY 方向被尊重：高环 DENY 覆盖低环 ALLOW（高环权威）。
+    """ring 顺序在 DENY 方向被尊重：高环**显式** DENY 覆盖低环 ALLOW（高环权威）。
 
-    Rings give authority ordering: a *higher*-ring DENY must tighten a
-    lower-ring ALLOW. A DENY that failed to do so would violate the ring
-    ordering (the property's negation).
+    Rings give authority ordering: a *higher*-ring explicit-condition DENY must
+    tighten a lower-ring ALLOW. A catch-all (empty-condition) DENY is a v1.3
+    safety exception and never overrides an ALLOW — so it is excluded here.
     """
     def bad(steps):
         return [And(st["effective"], st["has_before"], st["dec"] == DENY,
+                    Not(st["catch_all"]),
                     st["final_before"] == ALLOW,
                     st["ring"] > st["final_ring_before"],
                     st["final_after"] != DENY) for st in steps]

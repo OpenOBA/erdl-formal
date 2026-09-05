@@ -31,7 +31,7 @@ Two kinds of test:
 import itertools
 import random
 
-from z3 import IntVal, Or, Solver, sat, simplify, substitute
+from z3 import BoolVal, IntVal, Or, Solver, sat, simplify, substitute
 
 from erdl_formal import resolution
 from erdl_formal.resolution_smt import (
@@ -72,12 +72,14 @@ _OVR = {
 _OVR_RANK = {"critical": 0, "high": 1, "normal": 2, "low": 3, "none": 4}
 
 
-def _rule(decision, ring, priority=0, override="none"):
-    return {"decision": decision, "ring": ring, "priority": priority, "override": override}
+def _rule(decision, ring, priority=0, override="none", catch_all=False):
+    return {"decision": decision, "ring": ring, "priority": priority,
+            "override": override, "catch_all": catch_all}
 
 
 def _sort_key(r):
-    return (r["ring"], r["priority"], _OVR_RANK[r["override"]])
+    return (r["ring"], 1 if r.get("catch_all") else 0,
+            r["priority"], _OVR_RANK[r["override"]])
 
 
 # --- pure-Python mirror of the fold's decision table (input pre-sorted) ---
@@ -111,6 +113,8 @@ def _fold_sorted_py(rules):
             skip = ring
             continue
         if d == "DENY":
+            if r.get("catch_all") and final == "ALLOW":
+                continue  # catch-all DENY never overrides an explicit ALLOW
             if final is None or final == "DENY":
                 final, fring = "DENY", ring
             elif final == "ALLOW":
@@ -132,6 +136,7 @@ def _z3_resolve(rules):
         subs.append((m.dec[i], _DEC[r["decision"]]))
         subs.append((m.ring[i], IntVal(r["ring"])))
         subs.append((m.ovr[i], _OVR[r["override"]]))
+        subs.append((m.catch_all[i], BoolVal(r.get("catch_all", False))))
     return str(simplify(substitute(final, *subs)))
 
 
@@ -140,13 +145,14 @@ def _z3_resolve(rules):
 
 def test_reformulation_matches_reference_exhaustive():
     """The sorted-array reformulation equals resolve() on exhaustive grids."""
-    # n = 2 over the full grid (7 dec × 4 ring × 2 prio × 5 ovr).
+    # n = 2 over the full grid (7 dec × 4 ring × 2 prio × 5 ovr × 2 catch-all).
     atoms = [
-        _rule(d, ring, prio, ovr)
+        _rule(d, ring, prio, ovr, catch_all)
         for d in list(_DEC)
         for ring in [0, 1, 2, 3]
         for prio in [0, 1]
         for ovr in ["critical", "high", "normal", "low", "none"]
+        for catch_all in [False, True]
     ]
     for a, b in itertools.product(atoms, repeat=2):
         rules = [dict(a), dict(b)]
@@ -175,7 +181,7 @@ def test_reformulation_matches_reference_random():
     for _ in range(20000):
         rules = [
             _rule(rng.choice(decisions), rng.randint(0, 3),
-                  rng.randint(0, 3), rng.choice(overrides))
+                  rng.randint(0, 3), rng.choice(overrides), rng.choice([False, True]))
             for _ in range(4)
         ]
         got = _fold_sorted_py(sorted(rules, key=_sort_key))
@@ -201,7 +207,7 @@ def test_z3_fold_matches_reference_sample():
         for _ in range(count):
             rules = [
                 _rule(rng.choice(decisions), rng.randint(0, 3),
-                      rng.randint(0, 3), rng.choice(overrides))
+                      rng.randint(0, 3), rng.choice(overrides), rng.choice([False, True]))
                 for _ in range(n)
             ]
             got = _z3_resolve(rules)

@@ -12,14 +12,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-"""Rule resolution reference model (§9 + erdl evaluator.ts).
+"""Rule resolution reference model (§9 + erdl-landing evaluator.ts).
 
 Models the resolution semantics: ring order (0→3), priority ascending, override
-(DENY→ALLOW only), EMERGENCY_HALT short-circuit. Used to verify the
-ERDL-specific properties (override-soundness / ring-respect / emergency-shortcut).
+(DENY→ALLOW only), EMERGENCY_HALT short-circuit, and the v1.3 catch-all rule
+semantics (empty-condition rules sort last within a ring; a catch-all DENY
+never overrides an explicit ALLOW). Used to verify the ERDL-specific properties
+(override-soundness / ring-respect / emergency-shortcut).
 
-A rule here is a dict: {name, priority, ring, override, decision}; all rules are
-assumed to MATCH (this models resolution, not condition matching).
+A rule here is a dict: {name, priority, ring, override, decision, catch_all};
+all rules are assumed to MATCH (this models resolution, not condition
+matching). ``catch_all`` (default False) marks an empty-condition rule.
 """
 
 _OVERRIDE_RANK = {"critical": 0, "high": 1, "normal": 2, "low": 3}
@@ -43,7 +46,9 @@ def resolve(rules):
     final_ring = None
 
     for ring in sorted(by_ring):
-        ring_rules = sorted(by_ring[ring], key=lambda r: (r["priority"], _override_rank(r)))
+        ring_rules = sorted(by_ring[ring], key=lambda r: (
+            (1 if r.get("catch_all") else 0), r["priority"], _override_rank(r),
+        ))
         for r in ring_rules:
             d = r["decision"]
 
@@ -70,6 +75,10 @@ def resolve(rules):
                 break
 
             if d == "DENY":
+                # v1.3: a catch-all (empty-condition) DENY never overrides an
+                # explicit-condition ALLOW.
+                if r.get("catch_all") and final == "ALLOW":
+                    continue
                 if final is None or final == "DENY":
                     final, final_ring = "DENY", ring
                 elif final == "ALLOW":

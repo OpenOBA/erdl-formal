@@ -21,8 +21,9 @@ ring-respect CORRECTION discovered from evaluator.ts).
 from erdl_formal.resolution import resolve
 
 
-def _r(name, decision, priority, ring=3, override=None):
-    return {"name": name, "decision": decision, "priority": priority, "ring": ring, "override": override}
+def _r(name, decision, priority, ring=3, override=None, catch_all=False):
+    return {"name": name, "decision": decision, "priority": priority,
+            "ring": ring, "override": override, "catch_all": catch_all}
 
 
 def test_override_allow_relaxes_deny():
@@ -99,3 +100,23 @@ def test_request_human_accumulates():
     # non-ALLOW/DENY/HALT decision accumulates when nothing set yet
     rules = [_r("human", "REQUEST_HUMAN", 10, ring=0)]
     assert resolve(rules) == "REQUEST_HUMAN"
+
+
+def test_catch_all_deny_never_overrides_allow():
+    # v1.3: a catch-all (empty-condition) DENY never overrides an explicit
+    # ALLOW, even at a higher ring.
+    rules = [
+        _r("explicit-allow", "ALLOW", 10, ring=0),
+        _r("catchall-deny", "DENY", 20, ring=3, catch_all=True),
+    ]
+    assert resolve(rules) == "ALLOW"
+
+
+def test_catch_all_sorts_last_within_ring():
+    # v1.3: catch-all rules sort last within a ring, so an explicit rule wins
+    # even at equal priority.
+    rules = [
+        _r("catchall-deny", "DENY", 10, ring=0, catch_all=True),
+        _r("explicit-allow", "ALLOW", 10, ring=0),
+    ]
+    assert resolve(rules) == "ALLOW"
