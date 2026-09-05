@@ -31,6 +31,11 @@ Rejected (outside the subset): backreferences ``\\1``–``\\9`` / ``\\k<…>``,
 lookahead ``(?=`` ``(?!``, lookbehind ``(?<=`` ``(?<!``, atomic groups ``(?>``,
 conditionals ``(?(``, inline flags, ``\\B``, and ``^``/``$``/``\\b`` in a
 non-anchor position — fail-closed, never silently mis-encoded.
+
+Quantifier repeat counts (``{m}`` / ``{m,}`` / ``{m,n}``) are bounded by
+``MAX_REPEAT`` (10000, aligned with the E4 resource limit): exceeding it raises
+:class:`RegexError`. ``{m,n}`` with ``m > n`` is also rejected (a JS SyntaxError).
+The ``{m,}`` form is encoded lazily as ``(atom^m)·(atom*)`` — no O(m) expansion.
 """
 
 from z3 import (
@@ -128,6 +133,12 @@ _CONTROL_ESCAPES = {
 _LEFT_BOUNDARY = _union(_char(""), _concat(ANY_STRING, _NON_WORD))
 # _RIGHT_BOUNDARY = ε ∪ (non-word-char · Σ*)
 _RIGHT_BOUNDARY = _union(_char(""), _concat(_NON_WORD, ANY_STRING))
+
+# Resource limit for quantifier repeat counts (spec §7.3(d) / E4): bounds the
+# {{m}}/{{m,}}/{{m,n}} repeats to prevent the {{m,}} O(m) Concat expansion and
+# unbounded Z3 Loop bounds from becoming a DoS surface. Aligned with the E4
+# array limit (10000); legitimate rule quantifiers are far below this.
+MAX_REPEAT = 10000
 
 
 class _Parser:
@@ -247,10 +258,17 @@ class _Parser:
             q = self.try_brace_quantifier()
             if q is not None:
                 lo, hi = q
-                if hi is None:
-                    # {m,} → m or more
-                    return _concat(*([atom] * lo), Star(atom))
-                return Loop(atom, lo, hi)
+                if lo > MAX_REPEAT:
+                    self._err(f"quantifier lower bound {lo} exceeds the limit {MAX_REPEAT}")
+                if hi is not None:
+                    if hi > MAX_REPEAT:
+                        self._err(f"quantifier upper bound {hi} exceeds the limit {MAX_REPEAT}")
+                    if lo > hi:
+                        self._err(f"quantifier {{m,n}} requires m <= n (got {lo} > {hi})")
+                    return Loop(atom, lo, hi)
+                # {m,} → m or more, encoded lazily as (atom^m) · (atom*) — avoids
+                # the O(m) Concat expansion that made {m,} a compile-time DoS.
+                return _concat(Loop(atom, lo, lo), Star(atom))
             # bare '{' is a literal (JS treats invalid {…} as literal)
         return atom
 

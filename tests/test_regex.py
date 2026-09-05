@@ -115,6 +115,37 @@ def test_lazy_quantifier_same_language():
     assert _matches("a*?b", "aaab") is True
 
 
+def test_open_range_lazy_form():
+    # {m,} is encoded lazily as (atom^m)·(atom*) — semantics preserved, incl. {0,} == a*.
+    assert _matches("a{0,}", "") is True
+    assert _matches("a{0,}", "aaa") is True
+    assert _matches("a{3,}", "aa") is False
+    assert _matches("a{3,}", "aaa") is True
+
+
+def test_quantifier_resource_limit():
+    # At the boundary (allowed): compiles without raising.
+    compile_match("a{10000}")
+    compile_match("a{10000,}")
+    compile_match("a{1,10000}")
+    # Exceeding the limit → RegexError (fail-closed), not silent expansion.
+    for p in ["a{10001}", "a{10001,}", "a{1,10001}", "a{10001,20000}"]:
+        try:
+            compile_match(p)
+            assert False, f"{p!r} should be rejected"
+        except RegexError:
+            pass
+
+
+def test_quantifier_lower_exceeds_upper():
+    # {m,n} with m > n is a SyntaxError in JS; must be a clean RegexError, not a Z3 crash.
+    try:
+        compile_match("a{5,2}")
+        assert False, "a{5,2} should be rejected"
+    except RegexError:
+        pass
+
+
 # --- alternation and groups ---------------------------------------------------
 
 def test_alternation():
