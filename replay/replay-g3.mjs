@@ -3,7 +3,7 @@
 // 反例 = 「字段缺失绕过」：字段缺失 → 比较折叠 false → 规则不命中 → 不拦截（fail-open）。
 // 这与 erdl-formal 的 test_g3_field_missing_bypass 断言的是同一语义。
 
-import { Evaluator } from '../../erdl/dist/index.js';
+import { Evaluator } from '../../erdl-landing/dist/index.js';
 
 const evaluator = new Evaluator();
 

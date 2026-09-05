@@ -1,5 +1,5 @@
 // 交叉验证：erdl 引擎的定点小数（fixed-point.js）与我方 fixed_point.py 一致。
-import { fromDecimalString, add, div, toDecimalString } from '../../erdl/dist/expr-tree/fixed-point.js';
+import { fromDecimalString, add, div, toDecimalString } from '../../erdl-landing/dist/expr-tree/fixed-point.js';
 
 const cases = [
   ['1/3', div(fromDecimalString('1'), fromDecimalString('3'))],
