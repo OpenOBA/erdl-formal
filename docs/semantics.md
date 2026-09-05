@@ -9,11 +9,10 @@
 ```
 τ ∈ { Int, Rational, String, Bool, Array<τ>, Set<τ> }
 V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
-E  = EvalError                                   # E12 求值错误（与 Missing 区分）
 ```
 
 - `Rational` = 高精度有界有理数（128 位分子/分母），中间计算精确、仅输出节点 scale=14 + half-even（E2）。
-- `Missing` = 字段缺失 / undefined；`EvalError` = 求值错误（除零、类型不匹配的算术）。
+- `Missing` = 字段缺失 / undefined；`EvalError`（E12 求值错误，除零、类型不匹配算术）在**本 SMT 内核折叠为 `Missing`**（见 E3/E12 注）。
 
 ## 2. 节点指称（按 10 组）
 
@@ -25,7 +24,7 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 |---|---|
 | `field(f)` | `Def(ctx[f])` 若 `f ∈ ctx`；否则 `Missing` |
 | `var(v)` | `Def(ctx.$[v])`（`$` / `$.path`）；缺失则 `Missing` |
-| `literal(c)` | `Def(c)`（定点小数字符串 → Rational / NFC 字符串 / Bool）|
+| `literal(c)` | `Def(c)`（定点小数（`float`/`Fraction`/`Decimal`）→ Rational(scale-14) / NFC 字符串 / Bool）|
 
 ### 逻辑（3，两值）
 
@@ -66,7 +65,7 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 
 ### 算术（5，E2 定点有理数）
 
-`add/sub/mul/div`：精确有理数运算（128 位）；`div` 除零 → `EvalError`。`round`：half-even 舍入。**中间不舍入，仅输出节点 scale=14 + half-even**。
+`add/sub/mul/div`：精确有理数运算（128 位）；`div` 除零 → `Missing`（EvalError 的 SMT 近似）。`round`：half-even 舍入。**中间不舍入，仅输出节点 scale=14 + half-even**。
 
 ### 时间（5）
 
@@ -74,7 +73,7 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 
 ### 聚合（1）
 
-`aggregate(fn, over)`：`count/sum` 空数组 → `Some(0)`；`avg/min/max` 空数组 → `None`（条件上下文折叠 false）。非数组 over → `EvalError`。
+`aggregate(fn, over)`：`count/sum` 空数组 → `Some(0)`；`avg/min/max` 空数组 → `None`（条件上下文折叠 false）。非数组 over → 编译期 `TypeError`（fail-fast）。
 
 ## 3. E 约束（语义层）
 
@@ -82,7 +81,7 @@ E  = EvalError                                   # E12 求值错误（与 Missin
 |---|---|
 | E1 | 纯函数（无副作用/无时钟）；within/rate 状态在 GuardStateManager 树外 |
 | E2 | 定点 scale=14 + half-even；中间 128 位有理数 |
-| E3/E12 | EvalError → tier≤2 fail-close / tier 3-5 折叠 false |
+| E3/E12 | EvalError → tier≤2 fail-close / tier 3-5 折叠 false（**运行时** tier 折叠；本 SMT 内核将 EvalError 近似为 `Missing` = 折叠 false，tier≤2 fail-close 不在内核建模）|
 | E4 | 资源上限（Grade A 树深≤6/节点≤64/数组≤10000）|
 | E5 | 加载时类型检查 |
 | E8 | 量词空数组一律 false（all/none 为刻意安全偏离）|

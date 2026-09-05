@@ -71,14 +71,14 @@ No test cases. No sampling. Z3 searches the space of **all integers** for an inp
 
 Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the three ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **all rule-sets** — not sampling, a full proof. Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
-## 34/34 nodes, exact E1–E12 semantics
+## 34/34 nodes, E1–E12 semantics
 
 - **All 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (comparison and existence dispatch by field type: int / string / bool; `epoch_ms` supports date-only and ISO 8601 datetime with time / offset).
 - The hard semantics aren't "roughly right" — they are **bit-exact**:
   - **E2** fixed-point decimals: scale=14 + half-even — money is not allowed `0.1 + 0.2` drift;
   - **E8** quantifier empty-array folding: anti-vacuous-truth — `all([])` is false, not true;
   - **E11** three-valued logic: missing fields collapse to false at the leaves (not Kleene); whether a missing field fails open is resolved by the document fallback (see `always_denies`'s `default_decision`);
-  - **E12** tier folding, **E10** NFC normalization.
+  - **E10** NFC normalization; **E12** evaluation errors collapse to `Missing` (tier≤2 fail-close is runtime behavior, not modeled in the kernel).
 
 ## Independent verifier: three-way, byte-for-byte
 

@@ -70,14 +70,14 @@ assert not always_denies(
 
 表达式层性质（`always_denies` / `subsumes` / …）用「把反面写成约束、判 unsat」的方式证明；ERDL 特有的三条裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut`）由 `resolution_smt.py` 把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，**对全部规则集**判 UNSAT——不是抽样，是全量证明。任何 SAT 反例都是可回放真实引擎复核的具体规则集——证明 + 差分，双保险。
 
-## 34/34 节点覆盖，E1–E12 精确语义
+## 34/34 节点覆盖，E1–E12 语义
 
 - **34 节点全部有 SMT 编码**：取值 / 逻辑 / 比较 / 集合 / 字符串 / 存在量纲 / 量词 / 算术 / 时间 / 聚合（比较与存在按字段类型分派：int / string / bool；`epoch_ms` 支持 date-only 与 ISO 8601 带时分秒/时区偏移）。
 - 关键语义不是「大致对」，是**逐位精确**：
   - **E2** 定点小数：scale=14 + half-even——钱，不允许 `0.1 + 0.2` 式漂移；
   - **E8** 量词空数组折叠：反空洞真，`all([])` 是假不是真；
   - **E11** 三值逻辑：字段缺失在叶子处折叠为假（非 Kleene）；「缺失是否 fail-open」由文档兜底决策决定（见 `always_denies` 的 `default_decision`）；
-  - **E12** tier 折叠、**E10** NFC 归一化。
+  - **E10** NFC 归一化；**E12** 求值错误折叠为 `Missing`（tier≤2 fail-close 属运行时行为，不在内核建模）。
 
 ## 独立验证者：三重独立，逐字节对拍
 
