@@ -15,7 +15,7 @@
 |---|---|
 | `CONTRIBUTING.md` | 贡献流程（先 issue 后 PR / review / 开发环境）|
 | `SECURITY.md` | 漏洞私下报（`support@openoba.com`），不开公开 issue |
-| `CHANGELOG.md` | 变更记录（Keep a Changelog）|
+| `CHANGELOG.zh-CN.md` | 变更记录（Keep a Changelog，中文；英文版 `CHANGELOG.md`）|
 | `CODE_OF_CONDUCT.md` | Contributor Covenant v2.1 |
 | `style_guide.md` | 代码/注释/提交约定 |
 

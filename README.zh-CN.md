@@ -166,7 +166,7 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 - `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）
 - `SECURITY.md` — 漏洞私下报，不开公开 issue
-- `CHANGELOG.md` — 变更记录（Keep a Changelog）
+- `CHANGELOG.zh-CN.md` — 变更记录（Keep a Changelog，中文；英文版见 `CHANGELOG.md`）
 - `CODE_OF_CONDUCT.md` / `style_guide.md`
 
 ## 许可证

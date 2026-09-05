@@ -9,175 +9,154 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **字符串有序比较（gt/gte/lt/lte）**：按 spec §5 实现字符串字典序（Unicode 码点序，`"2" gt "10"` 为 true），带 E11 叶子折叠（Missing → false）。此前非 int 字段直接 `NotImplementedError`。
-- **GitHub Actions CI**：pytest 单测 + 引擎/向量对拍两个 job（拉取 erdl-landing 构建后跑 `replay/` 对拍）。
+- **String ordering (gt/gte/lt/lte)**: implemented per spec §5 — lexicographic (Unicode code-point) order, so `"2" gt "10"` is true, with E11 leaf collapse (Missing → false). Previously non-int fields raised `NotImplementedError`.
+- **GitHub Actions CI**: two jobs — pytest unit tests + engine/vector cross-check (checks out erdl-landing, builds it, runs the `replay/` cross-checks).
 
 ### Fixed
 
-- **裁决层 catch-all 语义对齐 erdl-landing `evaluator.ts`（R1/R2）**：`resolution.py` / `resolution_smt.py` 补上 v1.3 catch-all 语义——空条件规则环内排序最后；catch-all DENY 永不覆盖显式 ALLOW。`ring_respect` 性质相应排除 catch-all DENY。差分测试扫 catch_all ∈ {False, True}。
-- 修正 README「裁决语义 ↔ erdl Evaluator」的误导声明：实际差分是 `resolution.py` vs 其 Z3 模型（`resolution_smt.py`），语义对齐 erdl-landing 引擎。
-- 修复 `replay/*.mjs` 引擎对拍脚本的 import 路径（`repos/erdl` 已删 → `erdl-landing`），并扩展 resolution 对拍到 10 例（含 catch-all）。
+- **Resolution catch-all semantics aligned with erdl-landing `evaluator.ts` (R1/R2)**: `resolution.py` / `resolution_smt.py` now model the v1.3 catch-all semantics — empty-condition rules sort last within a ring; a catch-all DENY never overrides an explicit ALLOW. The `ring_respect` property excludes catch-all DENY. Differential tests sweep catch_all ∈ {False, True}.
+- Fixed the README's misleading "resolution ↔ erdl Evaluator" claim: the differential is actually `resolution.py` vs its Z3 model (`resolution_smt.py`), aligned to the erdl-landing engine.
+- Fixed the `replay/*.mjs` engine cross-check import paths (`repos/erdl` was deleted → `erdl-landing`), and expanded the resolution cross-check to 10 cases (including catch-all).
 
 ### Changed
 
-- **文档如实化 EvalError/E12**：SMT 内核无 EvalError 数据构造，除零/非数组 aggregate 折叠为 `Missing`（或编译期 `TypeError`）；README 不再宣称「E1–E12 精确语义」（tier≤2 fail-close 属运行时、未建模）。
-- semantics.md 字面量措辞：定点小数以 `float`/`Fraction`/`Decimal` 进入，非「小数字符串」。
-- 终审文档对齐：`semantics.en.md` / `tvl-encoding` / `field-contracts` 双语同步（去掉未实现的 `rational` 类型、补字符串排序映射、修 style/branch 不一致）。
-- 英文 README 设为默认（`README.md`），中文移 `README.zh-CN.md`；README 头加版本徽章。
+- **Documented EvalError/E12 accurately**: the SMT kernel has no EvalError constructor — division by zero / non-array aggregate collapse to `Missing` (or a compile-time `TypeError`); the README no longer claims "E1–E12 exact semantics" (tier≤2 fail-close is runtime behavior, not modeled).
+- `semantics.md` literal wording: fixed-point decimals enter as `float`/`Fraction`/`Decimal`, not a "decimal string".
+- Final doc alignment: `semantics.en.md` / `tvl-encoding` / `field-contracts` bilingual sync (dropped the unimplemented `rational` type, added string-ordering mapping, fixed style/branch inconsistencies).
+- English README is now the default (`README.md`); Chinese moved to `README.zh-CN.md`; added a version badge to the README header.
 
 ## [0.1.16] - 2026-09-05
 
 ### Fixed
 
-- **`\b` 边界语义与 JS 分歧（非单词边缘字符）**：`_LEFT_BOUNDARY` / `_RIGHT_BOUNDARY` 默认 body 首/尾为单词字符，导致 `\b` 后接非单词字符（如 `\b!`）双向偏离 JS `RegExp.test`：既漏报「a!b」（word→non-word 边界），又误报「!a」（串首无翻转）。现按 body 首/尾字符词性拆分，相邻 prefix/suffix 约束为相反词性——边界 = 词性翻转。锚点 `^\b` / `\b$` 把边界钉在串边（串首/尾视为非单词）。
-- +1 回归测试（`test_word_boundary_nonword_edges`）。
+- **`\b` boundary semantics diverged from JS (non-word edge chars)**: `_LEFT_BOUNDARY` / `_RIGHT_BOUNDARY` assumed the body starts/ends with a word char, so `\b` followed by a non-word char (e.g. `\b!`) diverged from JS `RegExp.test` in BOTH directions: missed "a!b" (word→non-word boundary) and falsely matched "!a" (no flip at start). Now the body is split by its first/last char word-ness and the adjacent prefix/suffix is constrained to the opposite word-ness. Anchors `^\b` / `\b$` pin the boundary to the string edge (start/end count as non-word).
+- +1 regression test (`test_word_boundary_nonword_edges`).
 
 ## [0.1.15] - 2026-09-05
 
 ### Added
 
-- **小数字面量支持（E2 钱场景）**：`["lit", 0.5]` 这类金额阈值小数字面量此前 `NotImplementedError`，用户须手工换算 scale-14 整数。现 `float` / `Fraction` / `Decimal` 面量自动换算 scale-14（`float` 走 `Decimal(str(value))` 最短往返表示、科学计数法安全；`Fraction` / `Decimal` 精确路径；NaN/inf 拒绝）。新增 `fixed_point.to_scale14_int`。
-- +2 回归测试（小数面量等价 + 非有限值拒绝）。
+- **Decimal literals (E2 money)**: `["lit", 0.5]` previously raised `NotImplementedError`; users had to hand-convert to scale-14 integers. Now `float` / `Fraction` / `Decimal` literals auto-convert to scale-14 (`float` via `Decimal(str(value))` — shortest round-trip, scientific-notation safe; `Fraction` / `Decimal` exact; NaN/inf rejected). Added `fixed_point.to_scale14_int`.
+- +2 regression tests (decimal-literal equivalence + non-finite rejection).
 
 ### Changed
 
-- `test_compile_unsupported_literal_raises` 改用真正不支持的类型（`None`），因为 `float` 现已支持。
+- `test_compile_unsupported_literal_raises` now uses a genuinely unsupported type (`None`), since `float` is supported.
 
 ## [0.1.14] - 2026-09-05
 
 ### Fixed
 
-- **`always_denies` 的 premise∩missing 矛盾误报 fail-open**：`still_fires` 探测时若 `missing_field` 也在 `premises` 中，会同时断言 `premise(field) ∧ missing(field)` → 恒 UNSAT → 即使规则根本不引用该字段也误报 fail-open。现在探测时把 `missing_field` 从 `premises` 剔除（missing 覆盖 premise），按字段真缺失重判。
-- +1 回归测试（`test_always_denies_missing_field_not_referenced`）。
+- **`always_denies` premise∩missing contradiction false fail-open**: when `missing_field` was also in `premises`, the probe asserted `premise(field) ∧ missing(field)` — always UNSAT — so a rule that never references the field was falsely reported fail-open. The probe now drops `missing_field` from `premises` (missing overrides premise).
+- +1 regression test (`test_always_denies_missing_field_not_referenced`).
 
 ## [0.1.13] - 2026-09-05
 
 ### Fixed
 
-- **量化符资源上限（E4）**：`{m}` / `{m,}` / `{m,n}` 的 lo/hi 超过 `MAX_REPEAT`（10000）时抛 `RegexError`（fail-closed），修复 `{m,}` 的 O(m) Concat 编译期膨胀 DoS 面（`a{5000000,}` 原先构建 500 万元组 Concat 树）。
-- **`{m,}` 改惰性编码**：`Concat(Loop(atom,m,m), Star(atom))` 取代 `_concat(*([atom]*m), Star(atom))`，消除 O(m) 展开。
-- **`{m,n}` 当 m > n**：抛 `RegexError`（JS SyntaxError 语义），修复原先的 `Z3Exception: loop lower bound must not exceed upper bound` 崩溃。
-- +3 回归测试（开区间惰性语义 / 资源上限 / m>n）。
+- **Quantifier resource limit (E4)**: `{m}` / `{m,}` / `{m,n}` bounds beyond `MAX_REPEAT` (10000) raise `RegexError` (fail-closed), fixing the `{m,}` O(m) Concat compile-time DoS (`a{5000000,}` previously built a 5M-element Concat tree).
+- **`{m,}` lazy encoding**: `Concat(Loop(atom,m,m), Star(atom))` replaces `_concat(*([atom]*m), Star(atom))`, removing the O(m) expansion.
+- **`{m,n}` with m > n**: raises `RegexError` (JS SyntaxError semantics), fixing the previous `Z3Exception: loop lower bound must not exceed upper bound` crash.
+- +3 regression tests (open-range lazy semantics / resource limit / m>n).
 
 ## [0.1.12] - 2026-09-05
 
 ### Added
 
-- **裁决层三条性质纳入 SMT 全量证明**（`resolution_smt.py`）：把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，`override_soundness` / `ring_respect` / `emergency_shortcut` 三条 ERDL 特有性质对**全部规则集**判 UNSAT——从 10 个手写单测升级为全量证明。
-- 差分验证（`test_resolution_smt.py`）：Z3 fold 与参考实现 `resolve()` 穷举 + 随机对拍，保证符号模型零漂移；每条性质的非空性（antecedent 可达）亦被断言。
+- **Resolution-layer properties as SMT proofs** (`resolution_smt.py`): encodes `resolve()`'s ring / override / priority ordering as Z3 constraints; `override_soundness` / `ring_respect` / `emergency_shortcut` are proven UNSAT over ALL rule-sets — from 10 handwritten samples to a full proof.
+- Differential verification (`test_resolution_smt.py`): exhaustive + random cross-check of the Z3 fold against the reference `resolve()`, guaranteeing no divergence; non-vacuity (antecedent reachable) is also asserted.
 
 ### Removed
 
-- README「能证明什么」表删除 `never-errors` 与 `always-allows` 两行：二者无对应 API（`never_errors` / `always_allows` 在代码中不存在），且 SMT 编码为全函数（`Def | Missing`），「永不产生 EvalError」是模型的设计不变量、非可证性质。删除以避免「宣称大于测量」。
+- Removed `never-errors` and `always-allows` rows from the README's "what you can prove" table: neither has an API, and the SMT encoding is total (`Def | Missing`), so "never raises EvalError" is a design invariant, not a provable property. Removed to avoid claiming more than is measured.
 
 ## [0.1.11] - 2026-09-05
 
 ### Fixed
 
-- **`can_fire` 对非 int 字段强制 Missing 时崩溃**：`can_fire(missing=[...])` 无条件用 `is_missing_int(ctx.field(m))` 强制字段 Missing，string/bool 守卫字段直接 `Z3Exception: Sort mismatch`（崩溃而非返回验证结果）。`always_denies(missing_field=...)` 是其直接调用方（README 首页 fail-closed 探针），对 `status == "active"` 这类极常见守卫必崩。现 `CompileContext.missing(path)` 按字段类型分派（int/string/bool），`premise(path)` 复用为 `Not(missing(path))`，`can_fire` 改走 `ctx.missing(m)`。
-- 3 个回归测试（string/bool 字段 missing 不崩 + `always_denies` string missing fail-open）。
+- **`can_fire` crashed forcing non-int fields Missing**: `can_fire(missing=[...])` unconditionally used `is_missing_int(ctx.field(m))` to force a field Missing, so string/bool guard fields raised `Z3Exception: Sort mismatch` (a crash, not a result). `always_denies(missing_field=...)` is its direct caller (the README's fail-closed probe) and crashed on common guards like `status == "active"`. `CompileContext.missing(path)` now type-dispatches (int/string/bool), `premise(path)` reuses `Not(missing(path))`, and `can_fire` uses `ctx.missing(m)`.
+- 3 regression tests (string/bool missing don't crash + `always_denies` string missing fail-open).
 
 ## [0.1.10] - 2026-09-04
 
 ### Added
 
-- **`epoch_ms` 节点（日期字符串→epoch 毫秒）编码**：`calendar.py` 新增 `tvl_epoch_ms`，用 Z3 `StrToInt` + `Extract` + 数字正则守卫解析固定长度日期字符串（date-only `YYYY-MM-DD`、datetime `YYYY-MM-DDTHH:MM:SS`、带 `Z`、带 `±HH:MM` 时区偏移），复用 `days_from_civil` 算 epoch；非法/缺失→`Missing`。`compiler.py` 补 `["epoch_ms", arg]` 路由。至此 **34 节点全部编码**。
-- 6 个测试（`tests/test_epoch_ms.py`）：date-only/datetime/闰日/时区偏移/非法/缺失/编译器集成，交叉验证 Python `datetime.fromisoformat`。
+- **`epoch_ms` node (date string → epoch ms)**: `calendar.py` adds `tvl_epoch_ms`, parsing fixed-length date strings (date-only `YYYY-MM-DD`, datetime `YYYY-MM-DDTHH:MM:SS`, with `Z`, with `±HH:MM` offset) using Z3 `StrToInt` + `Extract` + a digit-regex guard, reusing `days_from_civil` for epoch; invalid/missing → `Missing`. `compiler.py` routes `["epoch_ms", arg]`. All 34 nodes are now encoded.
+- 6 tests (`tests/test_epoch_ms.py`): date-only/datetime/leap-day/offset/invalid/missing/compiler integration, cross-checked against Python `datetime.fromisoformat`.
 
 ## [0.1.9] - 2026-09-04
 
 ### Added
 
-- **`var` 节点（`$`/`$.path` 上下文变量）编码**：`CompileContext.var(path)` 返回自由 TVLInt 变量（spec §5.3 未声明 `$` 命名空间类型，默认 int，与未定型 field 一致）；`compiler.py` 补 `["var", path]` 路由。至此 34 节点中 33 个已编码，仅余 `epoch_ms`。
-- 2 个测试（`test_var_node_is_free_int_variable` / `test_var_node_can_fire`）。
+- **`var` node (`$`/`$.path` context variable)**: `CompileContext.var(path)` returns a free TVLInt (spec §5.3 leaves the `$` namespace untyped, defaulting to int, consistent with an untyped field); `compiler.py` routes `["var", path]`. 33 of 34 nodes encoded, leaving only `epoch_ms`.
+- 2 tests (`test_var_node_is_free_int_variable` / `test_var_node_can_fire`).
 
 ## [0.1.8] - 2026-09-04
 
 ### Fixed
 
-- **`mul`/`div` 算术节点静默缺口（全面 review 发现）**：`tvl_mul`/`tvl_div` 早已实现并有测试（`test_mul_div.py`），但 `compiler.py` 的 S-expression 编译器从未路由 `["mul", …]`/`["div", …]`——规则一旦用到乘法/除法（E2 定点「钱」算术）会直接 `NotImplementedError`。现补路由 + 集成测试。
+- **`mul`/`div` arithmetic nodes silently unrouted (found in full review)**: `tvl_mul`/`tvl_div` were implemented and tested (`test_mul_div.py`), but `compiler.py`'s S-expression compiler never routed `["mul", …]`/`["div", …]` — rules using multiply/divide (E2 fixed-point "money" arithmetic) raised `NotImplementedError`. Now routed + integration test.
 
 ### Changed
 
-- README「34 节点全部有 SMT 编码」修正为「32/34」：`var`（`$`/`$.path` 上下文变量）与 `epoch_ms`（日期字符串→毫秒解析）两个节点未在规则中使用、暂未编码，如实标注。
+- README "all 34 nodes have SMT encodings" corrected to "32/34": `var` and `epoch_ms` were not yet encoded.
 
 ## [0.1.7] - 2026-09-04
 
 ### Added
 
-- **`aggregate` `avg`/`min`/`max` 补全（对齐 spec §7.3(e)）**：`tvl_aggregate` 从只支持 `count`/`sum` 扩展为支持全部 5 个聚合函数。`avg` 空数组→`Missing`（E11 叶子折叠使比较为 false），非空→`Def(round_half_even(sum/count))`（scale-14 定点）；`min`/`max` 空数组→`Missing`，非空→`Def(If 折叠)`。不再需要 `None` 类型——spec §7.3(e) 的「折叠 false」语义与 `Missing` 的 E11 折叠一致。
-- 7 个新测试（avg 精确/半值/half-even 舍入、min/max、空数组折叠、编译器集成）；更新 `test_aggregate_unsupported_fn_raises` 为真正不支持的 `median`。
+- **`aggregate` `avg`/`min`/`max` completed (spec §7.3(e))**: `tvl_aggregate` extended from `count`/`sum` to all 5 aggregate functions. `avg` empty → `Missing` (E11 leaf collapse makes comparisons false); non-empty → `Def(round_half_even(sum/count))` (scale-14 fixed-point); `min`/`max` empty → `Missing`, non-empty → `Def(If fold)`. The `None` type is no longer needed — spec §7.3(e)'s "fold false" semantics matches `Missing`'s E11 collapse.
+- 7 new tests (avg exact / half / half-even rounding, min/max, empty-array folding, compiler integration); updated `test_aggregate_unsupported_fn_raises` to a genuinely unsupported `median`.
 
 ## [0.1.6] - 2026-09-04
 
 ### Added
 
-- **`match` 安全正则子集 → Z3 Re 编码**（对齐 spec §7.3(d)）：新增 `regex.py`，手写递归下降解析器把「安全正则子集」（正则语言）编译成 Z3 正则，精确编码 JS `RegExp.test()` 无 flag 语义——非锚定子串搜索、`.` 排除行终止符（`\n \r \u2028 \u2029`）、`\d\w\s`（及补集）ASCII 语义、`^`/`$` 锚点、`\b` ASCII 词边界、量词（含 `{m,n}`/`{m,}`/惰性）、交替、分组（含 `(?<name>)` 命名组）。`tvl_match` 从「字面量精确匹配」升级为完整安全子集匹配。
-- **非正则构造拒绝**：反向引用（`\1`–`\9`/`\k<…>`）、环视（`(?=)`/`(?! )`/`(?<=)`/`(?<!)`）、原子组、条件组、内联标志、`\B`、中间位置 `^`/`$` 一律抛 `RegexError`（fail-closed，与运行时 safeRegExp 加载时拒绝对齐）。
-- 24 个新测试（`tests/test_regex.py`）：子串/锚点/`.`/字符类/简写/量词/词边界/真实规则语料/拒绝用例。
+- **`match` safe-regex subset → Z3 Re** (spec §7.3(d)): new `regex.py` with a hand-written recursive-descent parser compiling the safe-regex subset (a regular language) to Z3 regexes, encoding JS `RegExp.test()` no-flag semantics — unanchored substring search, `.` excluding line terminators (`\n \r \u2028 \u2029`), `\d\w\s` (and complements) ASCII semantics, `^`/`$` anchors, `\b` ASCII word boundary, quantifiers (including `{m,n}`/`{m,}`/lazy), alternation, groups (including `(?<name>)` named groups). `tvl_match` upgraded from literal exact-match to the full safe subset.
+- **Non-regular construct rejection**: backreferences (`\1`–`\9`/`\k<…>`), lookaround (`(?=)`/`(?! )`/`(?<=)`/`(?<!)`), atomic groups, conditionals, inline flags, `\B`, mid-pattern `^`/`$` all raise `RegexError` (fail-closed, aligned with the runtime safeRegExp load-time rejection).
+- 24 new tests (`tests/test_regex.py`): substring/anchors/`.`/classes/shorthands/quantifiers/word-boundary/real-rule-corpus/rejection cases.
 
 ## [0.1.5] - 2026-09-04
 
 ### Fixed
 
-- **`in` 集合成员按字段类型分派（第三方审计）**：`tvl_in` 只支持 int，字符串/布尔字段的
-  `in` 直接 `Z3Exception: Sort mismatch`。补 `tvl_in_str`/`tvl_in_bool`，`compiler.py` 对 `in`
-  按操作数 sort 分派；成员 sort 不一致抛 `TypeError`。
-- **`div` 负数除数 half-even 舍入（第三方审计）**：`_round_half_even_div` 假设正除数，负数
-  除数时 `num % den` 带负号导致舍入方向错。补 `_round_half_even_div_signed` 将符号归一化后
-  舍入再回贴符号（half-even 对称：round(-x) = -round(x)）。
-- **数组元素建模为原始 τ（非 TVL(τ)）**：`array_element` 返回 TVL 类型导致量词/聚合的
-  `val_bool/val_int(Missing)` 为未定义访问器（`value(Missing)`），潜在 unsound。改为返回
-  原始 Bool/Int/String，量词与聚合不再对元素做 TVL 解包。
+- **`in` set membership type-dispatched (third-party audit)**: `tvl_in` only supported int; string/bool field `in` raised `Z3Exception: Sort mismatch`. Added `tvl_in_str`/`tvl_in_bool`; `compiler.py` dispatches `in` by operand sort; mismatched member sorts raise `TypeError`.
+- **`div` negative divisor half-even rounding (third-party audit)**: `_round_half_even_div` assumed a positive divisor; with a negative divisor, `num % den` carries the sign and rounds the wrong way. Added `_round_half_even_div_signed` which normalizes the sign, rounds, then reapplies it (half-even is symmetric: round(-x) = -round(x)).
+- **Array elements modeled as raw τ (not TVL(τ))**: `array_element` returning TVL made `val_bool/val_int(Missing)` an undefined accessor (`value(Missing)`) — potentially unsound. Changed to return raw Bool/Int/String; quantifiers and aggregates no longer unwrap TVL on elements.
 
 ### Changed
 
-- README：`aggregate` 表项如实标注 `avg/min/max` 待实现；新增「已知限制」段（`match` 仅
-  字面量、`length` 非 ASCII 字节数）；版本/测试计数去悬空数字。
+- README: `aggregate` table honestly notes `avg/min/max` as pending; added a "known limitations" section (`match` literal-only, `length` non-ASCII bytes); removed dangling version/test counts.
 
 ## [0.1.4] - 2026-09-04
 
 ### Added
 
-- **字符串/布尔比较与存在的 SMT 编码（第三方审计发现）**：此前 `eq/ne/exists` 只支持 int
-  字段，字符串字段的 `eq(tool.name, …)` 直接 `Z3Exception: Sort mismatch`。现在补
-  `tvl_eq_str/ne_str/eq_bool/ne_bool` + `exists_str/exists_bool`，`compiler.py` 对 `eq/ne/exists`
-  按操作数 sort 分派；`gt/gte/lt/lte` 仍仅 int，遇 string/bool 抛清晰 `NotImplementedError`
-  （不再让 Z3 崩 sort mismatch），操作数 sort 不一致抛 `TypeError`。
+- **String/bool comparison and existence SMT encoding (third-party audit)**: previously `eq/ne/exists` only supported int fields; a string field's `eq(tool.name, …)` raised `Z3Exception: Sort mismatch`. Added `tvl_eq_str/ne_str/eq_bool/ne_bool` + `exists_str/exists_bool`; `compiler.py` dispatches `eq/ne/exists` by operand sort; `gt/gte/lt/lte` remain int-only, raising a clear `NotImplementedError` for string/bool (instead of a Z3 sort mismatch crash); mismatched operand sorts raise `TypeError`.
 
 ## [0.1.3] - 2026-09-04
 
 ### Fixed
 
-- **`always_denies` 安全方向 bug（第三方审计发现）**：原实现把「字段缺失 → 守卫永假」
-  一律当作 fail-closed，忽略了文档未命中兜底决策。当兜底为 `ALLOW`（`resolution.resolve`
-  默认）时，守卫不命中即放行——规则实际 fail-open。现在 `always_denies` 接受
-  `default_decision`（默认 `"ALLOW"`）：兜底为 `DENY` 时字段缺失不绕过（fail-closed 成立）；
-  兜底为 `ALLOW` 时缺失字段会绕过（属性返回 False）。
+- **`always_denies` safety-direction bug (third-party audit)**: the original implementation treated "missing field → guard always false" as fail-closed, ignoring the document's unmatched fallback decision. With an `ALLOW` fallback (the `resolution.resolve` default), a silenced guard falls through — the rule actually fails open. `always_denies` now takes `default_decision` (default `"ALLOW"`): with a `DENY` fallback a missing field does not bypass (fail-closed holds); with an `ALLOW` fallback a missing field does bypass (property is False).
 
 ## [0.1.2] - 2026-09-03
 
 ### Changed
 
-- README 重写为开发者优先叙事（中英双语）+ Cedar/OPA 三维对比表。
-- 所有 spec 引用从 v2.0 重锚到 ERDL 语言规范 v2.1（§7.2 / §7.3 / §5 / §7 / 附录 A）；外链统一指 erdl-landing 仓库根的 `erdl-spec.md` / `erdl-spec.en.md`。
-- `field_contracts.py` 依据统一指 v2.1 语言规范（原指向产品规范 v2.0）。
+- README rewritten with a developer-first narrative (bilingual) + a three-way Cedar/OPA comparison table.
+- All spec references re-anchored from v2.0 to the ERDL language spec v2.1 (§7.2 / §7.3 / §5 / §7 / Appendix A); external links point to `erdl-spec.md` / `erdl-spec.en.md` at the erdl-landing repo root.
+- `field_contracts.py` basis now points to the v2.1 language spec (was the v2.0 product spec).
 
 ### Added
 
-- 34-node SMT encoding: values / logic / comparison / set / string / existence /
-  quantifier / arithmetic / time / aggregate (`tvl.py`, `compiler.py`,
-  `quantifiers.py`, `calendar.py`).
-- Property verification: never-errors / always-denies / always-allows /
-  subsumption / equivalence / disjointness, plus ERDL-specific
-  override-soundness / ring-respect / emergency-shortcut (`properties.py`).
+- 34-node SMT encoding: values / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (`tvl.py`, `compiler.py`, `quantifiers.py`, `calendar.py`).
+- Property verification: never-errors / always-denies / always-allows / subsumption / equivalence / disjointness, plus ERDL-specific override-soundness / ring-respect / emergency-shortcut (`properties.py`).
 - Rule-resolution reference model (`resolution.py`).
 - Fixed-point arithmetic, scale=14 + half-even rounding (`fixed_point.py`).
-- Gregorian calendar civil algorithm: date_part / date_add / month_last_day
-  (`calendar.py`).
+- Gregorian calendar civil algorithm: date_part / date_add / month_last_day (`calendar.py`).
 - Verification schema field contracts (`field_contracts.py`).
-- Cross-validation harness against the erdl reference engine and erdl-vectors
-  frozen vectors (`replay/`).
+- Cross-validation harness against the erdl reference engine and erdl-vectors frozen vectors (`replay/`).
 
 ### Documentation
 
@@ -194,5 +173,4 @@ Initial release (pre-publication).
 
 ### Changed
 
-- License: MIT → Apache-2.0 (explicit patent grant; aligns with the Cedar/OPA
-  policy-verification ecosystem).
+- License: MIT → Apache-2.0 (explicit patent grant; aligns with the Cedar/OPA policy-verification ecosystem).
