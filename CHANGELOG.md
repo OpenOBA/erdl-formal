@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.16] - 2026-09-05
+
+### Fixed
+
+- **`\b` 边界语义与 JS 分歧（非单词边缘字符）**：`_LEFT_BOUNDARY` / `_RIGHT_BOUNDARY` 默认 body 首/尾为单词字符，导致 `\b` 后接非单词字符（如 `\b!`）双向偏离 JS `RegExp.test`：既漏报「a!b」（word→non-word 边界），又误报「!a」（串首无翻转）。现按 body 首/尾字符词性拆分，相邻 prefix/suffix 约束为相反词性——边界 = 词性翻转。锚点 `^\b` / `\b$` 把边界钉在串边（串首/尾视为非单词）。
+- +1 回归测试（`test_word_boundary_nonword_edges`）。
+
 ## [0.1.15] - 2026-09-05
 
 ### Added
