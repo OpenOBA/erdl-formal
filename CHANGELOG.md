@@ -10,16 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - **字符串有序比较（gt/gte/lt/lte）**：按 spec §5 实现字符串字典序（Unicode 码点序，`"2" gt "10"` 为 true），带 E11 叶子折叠（Missing → false）。此前非 int 字段直接 `NotImplementedError`。
+- **GitHub Actions CI**：pytest 单测 + 引擎/向量对拍两个 job（拉取 erdl-landing 构建后跑 `replay/` 对拍）。
 
 ### Fixed
 
 - **裁决层 catch-all 语义对齐 erdl-landing `evaluator.ts`（R1/R2）**：`resolution.py` / `resolution_smt.py` 补上 v1.3 catch-all 语义——空条件规则环内排序最后；catch-all DENY 永不覆盖显式 ALLOW。`ring_respect` 性质相应排除 catch-all DENY。差分测试扫 catch_all ∈ {False, True}。
 - 修正 README「裁决语义 ↔ erdl Evaluator」的误导声明：实际差分是 `resolution.py` vs 其 Z3 模型（`resolution_smt.py`），语义对齐 erdl-landing 引擎。
+- 修复 `replay/*.mjs` 引擎对拍脚本的 import 路径（`repos/erdl` 已删 → `erdl-landing`），并扩展 resolution 对拍到 10 例（含 catch-all）。
 
 ### Changed
 
 - **文档如实化 EvalError/E12**：SMT 内核无 EvalError 数据构造，除零/非数组 aggregate 折叠为 `Missing`（或编译期 `TypeError`）；README 不再宣称「E1–E12 精确语义」（tier≤2 fail-close 属运行时、未建模）。
 - semantics.md 字面量措辞：定点小数以 `float`/`Fraction`/`Decimal` 进入，非「小数字符串」。
+- 终审文档对齐：`semantics.en.md` / `tvl-encoding` / `field-contracts` 双语同步（去掉未实现的 `rational` 类型、补字符串排序映射、修 style/branch 不一致）。
 
 ## [0.1.16] - 2026-09-05
 
