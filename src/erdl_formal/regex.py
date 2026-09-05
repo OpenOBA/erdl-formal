@@ -129,10 +129,56 @@ _CONTROL_ESCAPES = {
 }
 
 # word-boundary prefix/suffix languages (ASCII word chars)
-# _LEFT_BOUNDARY  = ε ∪ (Σ* · non-word-char) — the position after it is a word boundary
-_LEFT_BOUNDARY = _union(_char(""), _concat(ANY_STRING, _NON_WORD))
-# _RIGHT_BOUNDARY = ε ∪ (non-word-char · Σ*)
-_RIGHT_BOUNDARY = _union(_char(""), _concat(_NON_WORD, ANY_STRING))
+# A word boundary is where word-ness flips across a position: for a body B with
+# a leading \b, the prefix's last char and B's first char must have opposite
+# word-ness (start-of-string counts as non-word); symmetric for a trailing \b.
+_LEFT_BOUNDARY = _union(_char(""), _concat(ANY_STRING, _NON_WORD))   # ε ∪ Σ*·N  (prev non-word / start)
+_LEFT_WORD = _concat(ANY_STRING, _WORD)                               # Σ*·W  (prev word)
+_RIGHT_BOUNDARY = _union(_char(""), _concat(_NON_WORD, ANY_STRING))   # ε ∪ N·Σ*  (next non-word / end)
+_RIGHT_WORD = _concat(_WORD, ANY_STRING)                              # W·Σ*  (next word)
+_STARTS_WORD = _concat(_WORD, ANY_STRING)                             # body first char is word
+_STARTS_NONWORD = _concat(_NON_WORD, ANY_STRING)                      # body first char is non-word
+_ENDS_WORD = _concat(ANY_STRING, _WORD)                               # body last char is word
+_ENDS_NONWORD = _concat(ANY_STRING, _NON_WORD)                        # body last char is non-word
+
+
+def _boundary_terms(body, leading_b, anchored_start, trailing_b, anchored_end):
+    """Return the concatenations of (prefix · body · suffix) for the given
+    anchor/boundary combination.
+
+    A word boundary means word-ness flips across the edge, so the body is split
+    by its first-char / last-char word-ness and the adjacent prefix/suffix is
+    constrained to the *opposite* word-ness. ``anchored_start``/``anchored_end``
+    pin the boundary to the string edge (start/end count as non-word).
+    """
+    first_options = (True, False) if leading_b else (None,)
+    last_options = (True, False) if trailing_b else (None,)
+    terms = []
+    for first_word in first_options:
+        for last_word in last_options:
+            b = body
+            if leading_b:
+                if anchored_start:
+                    if not first_word:
+                        continue  # start-of-string boundary needs a word char next
+                    prefix = _char("")
+                else:
+                    prefix = _LEFT_BOUNDARY if first_word else _LEFT_WORD
+                b = Intersect(b, _STARTS_WORD if first_word else _STARTS_NONWORD)
+            else:
+                prefix = _char("") if anchored_start else ANY_STRING
+            if trailing_b:
+                if anchored_end:
+                    if not last_word:
+                        continue  # end-of-string boundary needs a word char before
+                    suffix = _char("")
+                else:
+                    suffix = _RIGHT_BOUNDARY if last_word else _RIGHT_WORD
+                b = Intersect(b, _ENDS_WORD if last_word else _ENDS_NONWORD)
+            else:
+                suffix = _char("") if anchored_end else ANY_STRING
+            terms.append(_concat(prefix, b, suffix))
+    return terms
 
 # Resource limit for quantifier repeat counts (spec §7.3(d) / E4): bounds the
 # {{m}}/{{m,}}/{{m,n}} repeats to prevent the {{m,}} O(m) Concat expansion and
@@ -172,25 +218,16 @@ class _Parser:
         if not isinstance(self.p, str):
             raise RegexError("match pattern must be a string")
 
-        prefix = ANY_STRING
-        suffix = ANY_STRING
-
-        if self._take("^"):
-            prefix = _char("")  # anchored at start of input
-        if self._take("\\b"):
-            prefix = _LEFT_BOUNDARY
-
+        anchored_start = self._take("^")
+        leading_b = self._take("\\b")
         body = self.parse_alt()
-
-        if self._take("\\b"):
-            suffix = _RIGHT_BOUNDARY
-        if self._take("$"):
-            suffix = _char("")  # anchored at end of input
+        trailing_b = self._take("\\b")
+        anchored_end = self._take("$")
 
         if not self._eof():
             self._err("trailing garbage")
 
-        return _concat(prefix, body, suffix)
+        return _union(*_boundary_terms(body, leading_b, anchored_start, trailing_b, anchored_end))
 
     # alternation: seq ('|' seq)*
     def parse_alt(self):

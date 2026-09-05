@@ -171,6 +171,23 @@ def test_word_boundary():
     assert _matches("\\beval\\s*\\(", "deval(") is False
 
 
+def test_word_boundary_nonword_edges():
+    # A \b boundary is where word-ness flips, regardless of which side is word.
+    # leading \b + non-word first char: boundary = word char before.
+    assert _matches("\\b!", "a!b") is True
+    assert _matches("\\b!", "!a") is False  # start-of-string is non-word: no flip
+    assert _matches("\\b!", "x!") is True
+    # trailing \b + non-word last char: boundary = word char after.
+    assert _matches("!\\b", "!a") is True
+    assert _matches("!\\b", "a!") is False
+    # anchored interplay: ^\b needs a word char at the very start.
+    assert _matches("^\\bword", "word") is True
+    assert _matches("^\\b!", "!a") is False
+    # word-first cases (unchanged).
+    assert _matches("\\ba", "!a") is True
+    assert _matches("\\ba", "ba") is False
+
+
 # --- real rule corpus patterns ------------------------------------------------
 
 def test_real_rule_patterns():
