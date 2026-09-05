@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.15] - 2026-09-05
+
+### Added
+
+- **小数字面量支持（E2 钱场景）**：`["lit", 0.5]` 这类金额阈值小数字面量此前 `NotImplementedError`，用户须手工换算 scale-14 整数。现 `float` / `Fraction` / `Decimal` 面量自动换算 scale-14（`float` 走 `Decimal(str(value))` 最短往返表示、科学计数法安全；`Fraction` / `Decimal` 精确路径；NaN/inf 拒绝）。新增 `fixed_point.to_scale14_int`。
+- +2 回归测试（小数面量等价 + 非有限值拒绝）。
+
+### Changed
+
+- `test_compile_unsupported_literal_raises` 改用真正不支持的类型（`None`），因为 `float` 现已支持。
+
 ## [0.1.14] - 2026-09-05
 
 ### Fixed
