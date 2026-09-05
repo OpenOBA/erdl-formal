@@ -223,6 +223,23 @@ def tvl_ne_str(a, b):
     return _collapse_str_binary(a, b, lambda x, y: x != y)
 
 
+def tvl_gt_str(a, b):
+    """String ordering, lexicographic (Unicode code-point order); Missing → Def(False)."""
+    return _collapse_str_binary(a, b, lambda x, y: x > y)
+
+
+def tvl_gte_str(a, b):
+    return _collapse_str_binary(a, b, lambda x, y: x >= y)
+
+
+def tvl_lt_str(a, b):
+    return _collapse_str_binary(a, b, lambda x, y: x < y)
+
+
+def tvl_lte_str(a, b):
+    return _collapse_str_binary(a, b, lambda x, y: x <= y)
+
+
 def tvl_length(s):
     """length (Unicode code points — Z3 StringSort is Seq(Char), Length counts code points)."""
     return If(is_missing_str(s), TVLInt.Missing, TVLInt.Def(Length(val_str(s))))

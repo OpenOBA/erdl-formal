@@ -52,13 +52,17 @@ from .tvl import (
     tvl_eq_bool,
     tvl_eq_str,
     tvl_gt,
+    tvl_gt_str,
     tvl_gte,
+    tvl_gte_str,
     tvl_in,
     tvl_in_bool,
     tvl_in_str,
     tvl_length,
     tvl_lt,
+    tvl_lt_str,
     tvl_lte,
+    tvl_lte_str,
     tvl_ne,
     tvl_ne_bool,
     tvl_ne_str,
@@ -156,7 +160,8 @@ class CompileContext:
 _EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
 _EQ_NE_STR = {"eq": tvl_eq_str, "ne": tvl_ne_str}
 _EQ_NE_BOOL = {"eq": tvl_eq_bool, "ne": tvl_ne_bool}
-_ORDER = {"gt": tvl_gt, "gte": tvl_gte, "lt": tvl_lt, "lte": tvl_lte}
+_ORDER_INT = {"gt": tvl_gt, "gte": tvl_gte, "lt": tvl_lt, "lte": tvl_lte}
+_ORDER_STR = {"gt": tvl_gt_str, "gte": tvl_gte_str, "lt": tvl_lt_str, "lte": tvl_lte_str}
 
 
 def _cmp_eq(op, a, b):
@@ -174,13 +179,15 @@ def _cmp_eq(op, a, b):
 
 
 def _cmp_order(op, a, b):
-    """Numeric ordering (gt/gte/lt/lte) — int fields only."""
+    """Ordering (gt/gte/lt/lte) — int fields (numeric) / string fields (Unicode code-point)."""
     sa, sb = a.sort(), b.sort()
     if sa != sb:
         raise TypeError(f"ordering op {op!r} operand sort mismatch: {sa} vs {sb}")
-    if sa != TVLInt:
-        raise NotImplementedError(f"ordering op {op!r} only supports int fields, got {sa!r}")
-    return _ORDER[op](a, b)
+    if sa == TVLInt:
+        return _ORDER_INT[op](a, b)
+    if sa == TVLStr:
+        return _ORDER_STR[op](a, b)
+    raise NotImplementedError(f"ordering op {op!r} only supports int/string fields, got {sa!r}")
 
 
 def _exists(x):

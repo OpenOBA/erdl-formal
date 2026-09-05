@@ -127,6 +127,29 @@ def test_decimal_literal_rejects_non_finite():
             pass
 
 
+def test_string_ordering_lexicographic():
+    """gt/gte/lt/lte on strings use Unicode code-point order (spec §5 Simple)."""
+    from erdl_formal.properties import subsumes
+    s = Schema()
+    s.add(FieldContract(field="code", type="string"))
+    # lexicographic: "2" > "10", so code=="2" ⇒ code>"10"
+    assert subsumes(
+        ["eq", ["field", "code"], ["lit", "2"]],
+        ["gt", ["field", "code"], ["lit", "10"]], s,
+    ) is True
+    # and "10" > "2" is false (numeric intuition reversed)
+    assert subsumes(
+        ["eq", ["field", "code"], ["lit", "10"]],
+        ["gt", ["field", "code"], ["lit", "2"]], s,
+    ) is False
+
+
+def test_string_ordering_missing_folds_false():
+    s = Schema()
+    s.add(FieldContract(field="code", type="string"))
+    assert can_fire(["gt", ["field", "code"], ["lit", "10"]], s, missing=["code"]) is False
+
+
 def test_missing_string_field_does_not_crash():
     """forcing a string field Missing must be type-dispatched, not int (regression: Sort mismatch)."""
     s = Schema()
