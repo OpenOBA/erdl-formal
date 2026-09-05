@@ -163,6 +163,16 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 > 英文版：`docs/*.en.md`
 
+## 鸣谢
+
+裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`）在成形过程中受益于外部 review。其中 **ANP2 Network**（[dev.to/anp2network](https://dev.to/anp2network)）对裁决语义做了三轮精确、可复现的 review，每轮都指出内核的一处具体边界：
+
+- **字符串/布尔 `eq`/`ne`/`exists`**（v0.1.2）——内核只编译 int 相等/存在，字符串相等直接 `Sort mismatch`；
+- **`always_denies` 的 fail-closed 方向**（v0.1.2）——性质证明的是「静默」而非「fail-closed」，在 ALLOW 兜底下方相反；
+- **catch-all 放松方向缺口**（v0.1.17）——空条件 ALLOW 能跨 ring 改写显式 DENY，且放松方向无性质看管。
+
+每一处都从「spec/引擎/性质缺口」推进到「修复 + 测试 + 证明」。项目因之更锋利。
+
 ## 贡献与安全
 
 - `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）

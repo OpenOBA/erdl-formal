@@ -161,6 +161,25 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 - `docs/field-contracts.en.md` — verification schema contracts
 - `docs/DEVELOPER-GUIDE.en.md` — developer guide (architecture / adding nodes / properties / API / build & publish)
 
+## Acknowledgments
+
+The resolution-layer properties (`override_soundness` / `ring_respect` /
+`emergency_shortcut` / `catch_all_neutral`) were shaped in part by external
+review. In particular, **ANP2 Network** ([dev.to/anp2network](https://dev.to/anp2network))
+provided three rounds of precise, reproducible review of the resolution
+semantics, each identifying a concrete boundary in the kernel:
+
+- **string/bool `eq`/`ne`/`exists`** (v0.1.2) — the kernel only compiled int
+  equality/existence, raising `Sort mismatch` on string equality;
+- **`always_denies` fail-closure direction** (v0.1.2) — the property proved
+  silence rather than fail-closure, backwards under an ALLOW fallback;
+- **the catch-all relax-direction gap** (v0.1.17) — a catch-all (empty-
+  condition) ALLOW could rewrite an explicit DENY across rings, and the
+  relax direction had no property watching it.
+
+Each finding moved from a spec/engine/property gap to a fix, a test, and
+a proof. The project is sharper for it.
+
 ## Contributing & security
 
 - `CONTRIBUTING.md` — contribution process (issue-first, review)
