@@ -1,0 +1,66 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Unit tests (pytest)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[dev]"
+      - name: Run pytest
+        run: pytest -q
+
+  crosscheck:
+    name: Engine + vector cross-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: erdl-formal
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenOBA/erdl-landing
+          path: erdl-landing
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenOBA/erdl-vectors
+          path: erdl-vectors
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Build erdl-landing engine
+        working-directory: erdl-landing
+        run: |
+          npm ci
+          npm run build
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install erdl-formal
+        working-directory: erdl-formal
+        run: pip install -e ".[dev]"
+
+      - name: Engine cross-check (node)
+        working-directory: erdl-formal
+        run: |
+          node replay/crosscheck-resolution.mjs
+          node replay/crosscheck-fixed-point.mjs
+          node replay/replay-g3.mjs
+
+      - name: Vector cross-check (python)
+        working-directory: erdl-formal
+        run: |
+          python replay/crosscheck-vectors.py
+          python replay/crosscheck-calendar.py
