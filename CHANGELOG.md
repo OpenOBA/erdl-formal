@@ -5,6 +5,13 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.14] - 2026-09-05
+
+### Fixed
+
+- **`always_denies` 的 premise∩missing 矛盾误报 fail-open**：`still_fires` 探测时若 `missing_field` 也在 `premises` 中，会同时断言 `premise(field) ∧ missing(field)` → 恒 UNSAT → 即使规则根本不引用该字段也误报 fail-open。现在探测时把 `missing_field` 从 `premises` 剔除（missing 覆盖 premise），按字段真缺失重判。
+- +1 回归测试（`test_always_denies_missing_field_not_referenced`）。
+
 ## [0.1.13] - 2026-09-05
 
 ### Fixed
