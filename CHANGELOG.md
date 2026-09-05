@@ -5,6 +5,17 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.12] - 2026-09-05
+
+### Added
+
+- **裁决层三条性质纳入 SMT 全量证明**（`resolution_smt.py`）：把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，`override_soundness` / `ring_respect` / `emergency_shortcut` 三条 ERDL 特有性质对**全部规则集**判 UNSAT——从 10 个手写单测升级为全量证明。
+- 差分验证（`test_resolution_smt.py`）：Z3 fold 与参考实现 `resolve()` 穷举 + 随机对拍，保证符号模型零漂移；每条性质的非空性（antecedent 可达）亦被断言。
+
+### Removed
+
+- README「能证明什么」表删除 `never-errors` 与 `always-allows` 两行：二者无对应 API（`never_errors` / `always_allows` 在代码中不存在），且 SMT 编码为全函数（`Def | Missing`），「永不产生 EvalError」是模型的设计不变量、非可证性质。删除以避免「宣称大于测量」。
+
 ## [0.1.11] - 2026-09-05
 
 ### Fixed

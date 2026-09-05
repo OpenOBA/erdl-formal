@@ -62,14 +62,13 @@ assert not always_denies(
 
 | 性质 | 含义 | 来源 |
 |---|---|---|
-| never-errors | 求值永不产生 EvalError | Cedar |
 | always-denies | 守卫可满足即拦截；配合 `default_decision` 判定字段缺失是否绕过 | Cedar + E11 |
-| always-allows / subsumption / equivalence / disjointness | 放行 / 蕴含 / 等价 / 互斥 | Cedar |
+| subsumption / equivalence / disjointness | 蕴含 / 等价 / 互斥 | Cedar |
 | override-soundness | override 仅 DENY→ALLOW 方向（不覆盖到更不安全态）| **ERDL 特有** |
-| ring-respect | 无 override 时，ring 顺序在 DENY 方向被尊重 | **ERDL 特有** |
+| ring-respect | 高环 DENY 覆盖低环 ALLOW（ring 顺序在 DENY 方向被尊重）| **ERDL 特有** |
 | emergency-shortcut | EMERGENCY_HALT 命中即短路 | **ERDL 特有** |
 
-每个性质都能合成具体反例，反例可回放真实引擎交叉验证——证明 + 差分，双保险。
+表达式层性质（`always_denies` / `subsumes` / …）用「把反面写成约束、判 unsat」的方式证明；ERDL 特有的三条裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut`）由 `resolution_smt.py` 把 `resolve()` 的 ring / override / priority 排序编码成 Z3 约束，**对全部规则集**判 UNSAT——不是抽样，是全量证明。任何 SAT 反例都是可回放真实引擎复核的具体规则集——证明 + 差分，双保险。
 
 ## 34/34 节点覆盖，E1–E12 精确语义
 
@@ -87,7 +86,7 @@ assert not always_denies(
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|
 | 定点小数 | `fixed_point.py` ↔ erdl `fixed-point.js` | 逐字节一致 |
-| 裁决语义 | `resolution.py` ↔ erdl `Evaluator` | 4 场景 |
+| 裁决语义 | `resolution.py` ↔ erdl `Evaluator` | 穷举 + 随机差分（`test_resolution_smt.py`）|
 | 算术向量 | ↔ erdl-vectors V-ENGINE | 7/7 |
 | 日历向量 | ↔ erdl-vectors V-ENGINE | 6/6 |
 | G3 反例回放 | `tvl.py` ↔ erdl engine | 逐场景一致 |
@@ -116,7 +115,8 @@ ERDL 规则 (S-expression)
    ▼  compiler.py（符号编译器：schema 驱动字段类型 + 量词索引展开）
 Z3 TVL 表达式（TVL(τ) = Def | Missing，叶子折叠）
    │
-   ▼  properties.py（性质验证）/ resolution.py（裁决参考模型）
+   ▼  properties.py（表达式层性质验证）/ resolution.py（裁决参考模型）
+     / resolution_smt.py（裁决层 SMT 全量证明）
 sat / unsat + 反例（回放真实引擎交叉验证）
 ```
 

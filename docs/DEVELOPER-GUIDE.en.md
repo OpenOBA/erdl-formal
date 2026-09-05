@@ -28,8 +28,9 @@ sat / unsat + counterexample → replayed against the real engine (replay/)
 | `compiler.py` | S-expression → Z3 TVL compiler | tvl, quantifiers, calendar, field_contracts |
 | `properties.py` | Property verification (satisfiability + counterexamples) | compiler |
 | `resolution.py` | Rule-resolution reference model (§9) | — |
+| `resolution_smt.py` | Resolution-layer SMT proofs (§9 three properties) | z3 |
 
-**Dependency direction**: `compiler` → `tvl/quantifiers/calendar/field_contracts`; `properties` → `compiler`; `resolution` is standalone.
+**Dependency direction**: `compiler` → `tvl/quantifiers/calendar/field_contracts`; `properties` → `compiler`; `resolution` / `resolution_smt` are standalone.
 
 ---
 
@@ -124,6 +125,7 @@ def disjoint(a_expr, b_expr, schema):
 | compiler | `CompileContext/compile_expr` | S-expression → Z3 |
 | properties | `can_fire/always_denies/subsumes/equivalent/disjoint` | Property verification |
 | resolution | `resolve` | Resolution (§9 ring/override/emergency) |
+| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/emergency_shortcut` | Resolution-layer SMT proofs |
 
 ---
 

@@ -63,14 +63,13 @@ No test cases. No sampling. Z3 searches the space of **all integers** for an inp
 
 | Property | Meaning | Origin |
 |---|---|---|
-| never-errors | evaluation never raises an EvalError | Cedar |
 | always-denies | fires whenever its guard can — whether a missing field opens a bypass is resolved against `default_decision` | Cedar + E11 |
-| always-allows / subsumption / equivalence / disjointness | permissive / implication / equivalence / mutual exclusion | Cedar |
+| subsumption / equivalence / disjointness | implication / equivalence / mutual exclusion | Cedar |
 | override-soundness | overrides go DENY→ALLOW only (never toward a less-safe state) | **ERDL-specific** |
-| ring-respect | without overrides, ring order is honored in the DENY direction | **ERDL-specific** |
+| ring-respect | a higher-ring DENY overrides a lower-ring ALLOW (ring order honored in the DENY direction) | **ERDL-specific** |
 | emergency-shortcut | EMERGENCY_HALT short-circuits the moment it fires | **ERDL-specific** |
 
-Every property can synthesize a concrete counterexample, and every counterexample can be replayed against the real engine — proof plus differential testing, double insurance.
+Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the three ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **all rule-sets** — not sampling, a full proof. Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
 ## 34/34 nodes, exact E1–E12 semantics
 
@@ -88,7 +87,7 @@ A verifier is only credible if it **never peeks at the examinee's answers**. erd
 | Cross-check | Pair | Result |
 |---|---|---|
 | Fixed-point | `fixed_point.py` ↔ erdl `fixed-point.js` | byte-identical |
-| Resolution | `resolution.py` ↔ erdl `Evaluator` | 4 scenarios |
+| Resolution | `resolution.py` ↔ erdl `Evaluator` | exhaustive + random differential (`test_resolution_smt.py`) |
 | Arithmetic vectors | ↔ erdl-vectors V-ENGINE | 7/7 |
 | Calendar vectors | ↔ erdl-vectors V-ENGINE | 6/6 |
 | G3 counterexample replay | `tvl.py` ↔ erdl engine | scenario-identical |
