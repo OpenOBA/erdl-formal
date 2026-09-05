@@ -60,6 +60,11 @@ def always_denies(rule_expr, schema, premises=(), missing_field=None, *, default
     - ``default_decision="ALLOW"`` → a silenced guard falls through to ALLOW →
       the rule FAILS OPEN (property is False).
 
+    If ``missing_field`` is also in ``premises``, it is forced Missing for the
+    probe (the premise is dropped for that field) — otherwise ``premise ∧
+    missing`` would be contradictory and falsely report fail-open even for a
+    rule that never references the field.
+
     Returns True iff:
     - the rule can fire under the premises (reachable), AND
     - (no ``missing_field`` given) OR
@@ -69,7 +74,11 @@ def always_denies(rule_expr, schema, premises=(), missing_field=None, *, default
     reachable = can_fire(rule_expr, schema, premises=premises)
     if missing_field is None:
         return reachable
-    still_fires = can_fire(rule_expr, schema, premises=premises, missing=[missing_field])
+    still_fires = can_fire(
+        rule_expr, schema,
+        premises=[p for p in premises if p != missing_field],
+        missing=[missing_field],
+    )
     closed = (default_decision == "DENY") or still_fires
     return reachable and closed
 

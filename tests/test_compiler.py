@@ -109,6 +109,26 @@ def test_always_denies_string_missing_fails_open():
     )
 
 
+def test_always_denies_missing_field_not_referenced():
+    """Forcing an *unreferenced* field Missing must not report fail-open.
+
+    Regression: when missing_field is also in premises, the probe previously
+    asserted premise(field) ∧ missing(field) — always UNSAT — so even a rule
+    that never reads the field was reported fail-open.
+    """
+    s = Schema()
+    s.add(FieldContract(field="a", type="int"))
+    s.add(FieldContract(field="b", type="int"))
+    # a > 0 never references b; forcing b Missing cannot silence the guard.
+    assert (
+        always_denies(
+            ["gt", ["field", "a"], ["lit", 0]], s,
+            premises=["a", "b"], missing_field="b", default_decision="ALLOW",
+        )
+        is True
+    )
+
+
 def test_array_element_is_raw_sort():
     """Array<τ> elements are raw τ, not TVL(τ) — no spurious Missing elements."""
     s = Schema()
