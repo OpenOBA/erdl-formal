@@ -16,11 +16,14 @@
 
 import pytest
 
+from decimal import Decimal
+from fractions import Fraction
+
 from z3 import BoolSort, is_expr
 
 from erdl_formal.compiler import CompileContext, compile_expr
 from erdl_formal.field_contracts import FieldContract, Schema
-from erdl_formal.properties import always_denies, can_fire
+from erdl_formal.properties import always_denies, can_fire, equivalent
 
 
 def _g3_schema():
@@ -81,6 +84,47 @@ def test_bool_exists_field():
     s = Schema()
     s.add(FieldContract(field="flag", type="bool"))
     assert can_fire(["exists", ["field", "flag"]], s, premises=["flag"]) is True
+
+
+def test_decimal_literal_compiles():
+    """Decimal literals (money thresholds) enter the verifier, auto-converted to scale-14."""
+    s = Schema()
+    s.add(FieldContract(field="amount", type="int"))
+    half = ["gt", ["field", "amount"], ["lit", 50000000000000]]
+    # float 0.5 == scale-14 50000000000000
+    assert equivalent(["gt", ["field", "amount"], ["lit", 0.5]], half, s) is True
+    # 0.1 / 12.34 (float precision absorbed by scale-14 rounding)
+    assert equivalent(
+        ["gt", ["field", "amount"], ["lit", 0.1]],
+        ["gt", ["field", "amount"], ["lit", 10000000000000]], s,
+    ) is True
+    assert equivalent(
+        ["gt", ["field", "amount"], ["lit", 12.34]],
+        ["gt", ["field", "amount"], ["lit", 1234000000000000]], s,
+    ) is True
+    # scientific-notation float (very small)
+    assert equivalent(
+        ["gt", ["field", "amount"], ["lit", 0.00001]],
+        ["gt", ["field", "amount"], ["lit", 1000000000]], s,
+    ) is True
+    # exact paths: Decimal / Fraction
+    assert equivalent(
+        ["gt", ["field", "amount"], ["lit", Decimal("0.5")]], half, s,
+    ) is True
+    assert equivalent(
+        ["gt", ["field", "amount"], ["lit", Fraction(1, 2)]], half, s,
+    ) is True
+
+
+def test_decimal_literal_rejects_non_finite():
+    s = Schema()
+    s.add(FieldContract(field="amount", type="int"))
+    for bad in (float("nan"), float("inf"), float("-inf")):
+        try:
+            can_fire(["gt", ["field", "amount"], ["lit", bad]], s, premises=["amount"])
+            assert False, f"{bad!r} should be rejected"
+        except ValueError:
+            pass
 
 
 def test_missing_string_field_does_not_crash():
@@ -278,8 +322,10 @@ def test_compile_unknown_op_raises():
 
 
 def test_compile_unsupported_literal_raises():
+    # float / Fraction / Decimal are now supported (scale-14 fixed-point); a
+    # genuinely unsupported literal type still raises.
     with pytest.raises(NotImplementedError):
-        _compile(["lit", 1.5], _int_schema())
+        _compile(["lit", None], _int_schema())
 
 
 def test_compile_unsupported_field_type_raises():

@@ -39,22 +39,27 @@ def parse(s: str) -> Fraction:
     return Fraction(s)
 
 
-def to_scale14_half_even(v: Fraction) -> Fraction:
-    """Round an exact rational to scale=14, half-even (banker's rounding).
+def to_scale14_int(v: Fraction) -> int:
+    """Exact rational → scale-14 integer (half-even rounding to 14 places).
 
-    Uses exact integer arithmetic — no floating point, no Decimal round-trip.
+    The integer is the fixed-point representation of ``v`` in the SMT model
+    (``TVLInt`` values are scale-14 integers). Exact integer arithmetic — no
+    floating point, no Decimal round-trip.
     """
     scaled = v * _SCALE_FACTOR
     floor = scaled.numerator // scaled.denominator
     rem = scaled.numerator - floor * scaled.denominator
     if rem * 2 == scaled.denominator:
         # exactly halfway → round to even
-        rounded = floor if floor % 2 == 0 else floor + 1
-    elif rem * 2 < scaled.denominator:
-        rounded = floor
-    else:
-        rounded = floor + 1
-    return Fraction(rounded, _SCALE_FACTOR)
+        return floor if floor % 2 == 0 else floor + 1
+    if rem * 2 < scaled.denominator:
+        return floor
+    return floor + 1
+
+
+def to_scale14_half_even(v: Fraction) -> Fraction:
+    """Round an exact rational to scale=14, half-even (banker's rounding)."""
+    return Fraction(to_scale14_int(v), _SCALE_FACTOR)
 
 
 def serialize(v: Fraction) -> str:

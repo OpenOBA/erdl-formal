@@ -25,9 +25,13 @@ S-expression form (aligned with the erdl external form):
   ["all"|"any"|"none", "array_field"]
 """
 
+from decimal import Decimal
+from fractions import Fraction
+
 from z3 import BoolSort, Const, IntSort, Not, StringSort
 
 from .field_contracts import Schema
+from .fixed_point import to_scale14_int
 from .quantifiers import tvl_all, tvl_any, tvl_none
 from .tvl import (
     TVLBool,
@@ -282,6 +286,17 @@ def _lit(value):
         return TVLBool.Def(value)
     if isinstance(value, int):
         return TVLInt.Def(value)
+    if isinstance(value, float):
+        # Decimal literals (money thresholds) enter as float; convert through
+        # the shortest round-trip decimal (str) so 0.1 stays exactly 1/10, and
+        # scientific notation (str of very small/large floats) parses exactly.
+        if value != value or value in (float("inf"), float("-inf")):
+            raise ValueError(f"literal {value!r} is not a finite decimal")
+        return TVLInt.Def(to_scale14_int(Fraction(Decimal(str(value)))))
+    if isinstance(value, Fraction):
+        return TVLInt.Def(to_scale14_int(value))
+    if isinstance(value, Decimal):
+        return TVLInt.Def(to_scale14_int(Fraction(value)))
     if isinstance(value, str):
         return str_def(value)
     raise NotImplementedError(f"literal {value!r}")
