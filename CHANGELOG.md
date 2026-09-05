@@ -139,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   字段，字符串字段的 `eq(tool.name, …)` 直接 `Z3Exception: Sort mismatch`。现在补
   `tvl_eq_str/ne_str/eq_bool/ne_bool` + `exists_str/exists_bool`，`compiler.py` 对 `eq/ne/exists`
   按操作数 sort 分派；`gt/gte/lt/lte` 仍仅 int，遇 string/bool 抛清晰 `NotImplementedError`
-  （不再让 Z3 崩 sort mismatch），操作数 sort 不一致抛 `TypeError`。感谢 ANP2 Network。
+  （不再让 Z3 崩 sort mismatch），操作数 sort 不一致抛 `TypeError`。
 
 ## [0.1.3] - 2026-09-04
 
@@ -149,7 +149,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   一律当作 fail-closed，忽略了文档未命中兜底决策。当兜底为 `ALLOW`（`resolution.resolve`
   默认）时，守卫不命中即放行——规则实际 fail-open。现在 `always_denies` 接受
   `default_decision`（默认 `"ALLOW"`）：兜底为 `DENY` 时字段缺失不绕过（fail-closed 成立）；
-  兜底为 `ALLOW` 时缺失字段会绕过（属性返回 False）。感谢 ANP2 Network 的第三方审计。
+  兜底为 `ALLOW` 时缺失字段会绕过（属性返回 False）。
 
 ## [0.1.2] - 2026-09-03
 
