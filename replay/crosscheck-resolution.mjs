@@ -29,6 +29,9 @@ const cases = [
   ['catch-all DENY never overrides explicit ALLOW', [rule('explicit-allow', 'ALLOW', 10, 0), rule('catchall-deny', 'DENY', 20, 3, null, true)], 'ALLOW'],
   ['catch-all sorts last within a ring', [rule('catchall-deny', 'DENY', 10, 0, null, true), rule('explicit-allow', 'ALLOW', 10, 0)], 'ALLOW'],
   ['catch-all DENY still fires when nothing else set', [rule('catchall-deny', 'DENY', 10, 0, null, true)], 'DENY'],
+  // --- §7.1 第 6 条：catch-all ALLOW 放松方向（ANP2 第三轮）---
+  ['catch-all ALLOW never overrides explicit DENY', [rule('explicit-deny', 'DENY', 10, 0), rule('catchall-allow', 'ALLOW', 20, 3, 'critical', true)], 'DENY'],
+  ['catch-all ALLOW still acts as fallback when nothing set', [rule('catchall-allow', 'ALLOW', 20, 3, 'critical', true)], 'ALLOW'],
   // --- 软决策累积 + 默认 ---
   ['REQUEST_HUMAN accumulates when nothing set', [rule('human', 'REQUEST_HUMAN', 10, 0)], 'REQUEST_HUMAN'],
   ['default ALLOW when nothing matches', [], 'ALLOW'],

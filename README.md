@@ -166,8 +166,9 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 The resolution-layer properties (`override_soundness` / `ring_respect` /
 `emergency_shortcut` / `catch_all_neutral`) were shaped in part by external
 review. In particular, **ANP2 Network** ([dev.to/anp2network](https://dev.to/anp2network))
-provided three rounds of precise, reproducible review of the resolution
-semantics, each identifying a concrete boundary in the kernel:
+provided two rounds of precise, reproducible review of the resolution
+semantics, across three concrete findings, each identifying a boundary in
+the kernel:
 
 - **string/bool `eq`/`ne`/`exists`** (v0.1.2) — the kernel only compiled int
   equality/existence, raising `Sort mismatch` on string equality;
