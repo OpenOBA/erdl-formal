@@ -87,7 +87,7 @@ A verifier is only credible if it **never peeks at the examinee's answers**. erd
 | Cross-check | Pair | Result |
 |---|---|---|
 | Fixed-point | `fixed_point.py` ↔ erdl `fixed-point.js` | byte-identical |
-| Resolution | `resolution.py` ↔ erdl `Evaluator` | exhaustive + random differential (`test_resolution_smt.py`) |
+| Resolution | `resolution.py` ↔ `resolution_smt.py` (Z3 model; semantics aligned to erdl-landing `evaluator.ts`) | exhaustive + random differential (`test_resolution_smt.py`) |
 | Arithmetic vectors | ↔ erdl-vectors V-ENGINE | 7/7 |
 | Calendar vectors | ↔ erdl-vectors V-ENGINE | 6/6 |
 | G3 counterexample replay | `tvl.py` ↔ erdl engine | scenario-identical |

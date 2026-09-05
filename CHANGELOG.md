@@ -5,6 +5,22 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] - 2026-09-05
+
+### Added
+
+- **字符串有序比较（gt/gte/lt/lte）**：按 spec §5 实现字符串字典序（Unicode 码点序，`"2" gt "10"` 为 true），带 E11 叶子折叠（Missing → false）。此前非 int 字段直接 `NotImplementedError`。
+
+### Fixed
+
+- **裁决层 catch-all 语义对齐 erdl-landing `evaluator.ts`（R1/R2）**：`resolution.py` / `resolution_smt.py` 补上 v1.3 catch-all 语义——空条件规则环内排序最后；catch-all DENY 永不覆盖显式 ALLOW。`ring_respect` 性质相应排除 catch-all DENY。差分测试扫 catch_all ∈ {False, True}。
+- 修正 README「裁决语义 ↔ erdl Evaluator」的误导声明：实际差分是 `resolution.py` vs 其 Z3 模型（`resolution_smt.py`），语义对齐 erdl-landing 引擎。
+
+### Changed
+
+- **文档如实化 EvalError/E12**：SMT 内核无 EvalError 数据构造，除零/非数组 aggregate 折叠为 `Missing`（或编译期 `TypeError`）；README 不再宣称「E1–E12 精确语义」（tier≤2 fail-close 属运行时、未建模）。
+- semantics.md 字面量措辞：定点小数以 `float`/`Fraction`/`Decimal` 进入，非「小数字符串」。
+
 ## [0.1.16] - 2026-09-05
 
 ### Fixed

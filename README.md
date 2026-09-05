@@ -86,7 +86,7 @@ assert not always_denies(
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|
 | 定点小数 | `fixed_point.py` ↔ erdl `fixed-point.js` | 逐字节一致 |
-| 裁决语义 | `resolution.py` ↔ erdl `Evaluator` | 穷举 + 随机差分（`test_resolution_smt.py`）|
+| 裁决语义 | `resolution.py` ↔ `resolution_smt.py`（Z3 模型；语义对齐 erdl-landing `evaluator.ts`） | 穷举 + 随机差分（`test_resolution_smt.py`）|
 | 算术向量 | ↔ erdl-vectors V-ENGINE | 7/7 |
 | 日历向量 | ↔ erdl-vectors V-ENGINE | 6/6 |
 | G3 反例回放 | `tvl.py` ↔ erdl engine | 逐场景一致 |
