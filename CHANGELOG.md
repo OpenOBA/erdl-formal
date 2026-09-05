@@ -5,6 +5,15 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.13] - 2026-09-05
+
+### Fixed
+
+- **量化符资源上限（E4）**：`{m}` / `{m,}` / `{m,n}` 的 lo/hi 超过 `MAX_REPEAT`（10000）时抛 `RegexError`（fail-closed），修复 `{m,}` 的 O(m) Concat 编译期膨胀 DoS 面（`a{5000000,}` 原先构建 500 万元组 Concat 树）。
+- **`{m,}` 改惰性编码**：`Concat(Loop(atom,m,m), Star(atom))` 取代 `_concat(*([atom]*m), Star(atom))`，消除 O(m) 展开。
+- **`{m,n}` 当 m > n**：抛 `RegexError`（JS SyntaxError 语义），修复原先的 `Z3Exception: loop lower bound must not exceed upper bound` 崩溃。
+- +3 回归测试（开区间惰性语义 / 资源上限 / m>n）。
+
 ## [0.1.12] - 2026-09-05
 
 ### Added
