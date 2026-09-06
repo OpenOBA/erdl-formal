@@ -99,11 +99,16 @@ def tvl_month_last_day(epoch):
 
 
 def tvl_date_add(unit, base, amount):
-    """date_add{unit}: add an integer amount (years/months/days/hours), UTC + month-end clamp."""
+    """date_add{unit}: add an integer amount (years/months/days/hours), UTC + month-end clamp.
+
+    SPEC v2.1 §7.3(f): the ``amount`` MUST be an integer (a duration is an integer
+    unit; half-even rounding of "add 1.5 months" has no business meaning). A
+    non-integer amount (scale-14 value not divisible by 10^14) folds to Missing.
+    """
 
     def body():
         z = _z(base)
-        n = val_int(amount) / 10 ** 14  # amount is scale-14 → integer step
+        n = val_int(amount) / 10 ** 14  # amount is scale-14 → integer step (amount MUST be integer)
         if unit == "days":
             return (z + n) * DAY_MS
         if unit == "hours":
@@ -122,7 +127,11 @@ def tvl_date_add(unit, base, amount):
         raise NotImplementedError(f"date_add unit {unit!r}")
 
     return If(
-        Or(is_missing_int(base), is_missing_int(amount)),
+        Or(
+            is_missing_int(base),
+            is_missing_int(amount),
+            val_int(amount) % 10 ** 14 != 0,  # non-integer amount → type_mismatch → Missing
+        ),
         TVLInt.Missing,
         TVLInt.Def(body()),
     )

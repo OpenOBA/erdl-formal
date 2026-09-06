@@ -57,21 +57,21 @@ def test_compiler_in():
     s = Schema()
     s.add(FieldContract(field="status", type="int"))
     # status in [1, 2, 3] → satisfiable
-    expr = ["in", ["field", "status"], [["lit", 1], ["lit", 2], ["lit", 3]]]
+    expr = {"in": [{"field": "status"}, [1, 2, 3]]}
     assert can_fire(expr, s, premises=["status"]) is True
 
 
 def test_compiler_in_string_field():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
-    expr = ["in", ["field", "tool.name"], [["lit", "read"], ["lit", "write"]]]
+    expr = {"in": [{"field": "tool.name"}, ["read", "write"]]}
     assert can_fire(expr, s, premises=["tool.name"]) is True
 
 
 def test_compiler_in_bool_field():
     s = Schema()
     s.add(FieldContract(field="flag", type="bool"))
-    expr = ["in", ["field", "flag"], [["lit", True], ["lit", False]]]
+    expr = {"in": [{"field": "flag"}, [True, False]]}
     assert can_fire(expr, s, premises=["flag"]) is True
 
 
@@ -80,5 +80,5 @@ def test_compiler_add_compare():
     s.add(FieldContract(field="a", type="int"))
     s.add(FieldContract(field="b", type="int"))
     # a + b > 100 → satisfiable
-    expr = ["gt", ["add", ["field", "a"], ["field", "b"]], ["lit", 100]]
+    expr = {"gt": [{"add": [{"field": "a"}, {"field": "b"}]}, 100]}
     assert can_fire(expr, s, premises=["a", "b"]) is True

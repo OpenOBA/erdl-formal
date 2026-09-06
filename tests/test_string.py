@@ -60,7 +60,7 @@ def test_string_missing_collapses_false():
 def test_compiler_string_field():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
-    expr = ["starts_with", ["field", "tool.name"], ["lit", "read"]]
+    expr = {"starts_with": [{"field": "tool.name"}, "read"]}
     assert can_fire(expr, s, premises=["tool.name"]) is True
 
 
@@ -90,16 +90,16 @@ def test_string_eq_missing_collapses_false():
 def test_compiler_string_eq_field():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
-    assert can_fire(["eq", ["field", "tool.name"], ["lit", "issue_refund"]], s, premises=["tool.name"]) is True
+    assert can_fire({"eq": [{"field": "tool.name"}, "issue_refund"]}, s, premises=["tool.name"]) is True
 
 
 def test_compiler_string_ne_field():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
-    assert can_fire(["ne", ["field", "tool.name"], ["lit", "issue_refund"]], s, premises=["tool.name"]) is True
+    assert can_fire({"ne": [{"field": "tool.name"}, "issue_refund"]}, s, premises=["tool.name"]) is True
 
 
 def test_compiler_string_exists_field():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
-    assert can_fire(["exists", ["field", "tool.name"]], s, premises=["tool.name"]) is True
+    assert can_fire({"exists": {"field": "tool.name"}}, s, premises=["tool.name"]) is True

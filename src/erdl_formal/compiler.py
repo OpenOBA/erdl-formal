@@ -15,20 +15,38 @@
 """Symbolic compiler: ERDL S-expression → Z3 TVL.
 
 Compiles the expression tree to Z3 three-valued logic, following the
-denotational semantics (`docs/semantics.md`). Covers the supported subset:
-field / literal / and / or / not / comparison / exists / quantifier.
-Arithmetic / string / time / aggregate are also encoded.
+denotational semantics (`docs/semantics.md`). Covers the full 34-node kernel:
+field / literal / and / or / not / comparison / in / string / exists / length /
+between / quantifier / arithmetic / time / aggregate.
 
-S-expression form (aligned with the erdl external form):
-  ["field", "path"] · ["lit", value] · ["and", a, b] · ["or", a, b] ·
-  ["not", a] · ["eq"|"ne"|"gt"|"gte"|"lt"|"lte", a, b] · ["exists", a] ·
-  ["all"|"any"|"none", "array_field"]
+S-expression form (SPEC §12 external form — single-key object, aligned with
+the engine's ``s-expression.ts`` ``fromSExpr``):
+
+    {"field": "path"} · {"var": "path"} · bare value = literal
+    {"and": [...]} · {"or": [...]} · {"not": arg}
+    {"eq"|"ne"|"gt"|"gte"|"lt"|"lte": [left, right]}
+    {"in": [left, members]}                       (members = bare array literal)
+    {"contains"|"match"|"starts_with"|"ends_with": [left, right]}
+    {"exists": arg} · {"length": arg} · {"between": [value, min, max]}
+    {"all"|"any"|"none": {"binding": "x", "over": field, "predicate": expr}}
+    {"add"|"sub"|"mul"|"div"|"round": [...]}
+    {"days_between": [from, to]} · {"epoch_ms": arg}
+    {"date_add": {"unit", "base", "amount"}} · {"date_part": {"unit", "arg"}}
+    {"month_last_day": arg}
+    {"count"|"sum"|"avg"|"min"|"max": over}       (over = array field)
+
+Array modeling (length-variable, not a fixed-length tuple): an array field with
+``cardinality`` N contributes a **runtime length** free variable ``len ∈ [0, N]``
+and N raw-τ element variables; only indices ``i < len`` participate in
+quantifier/aggregate evaluation. This makes E8 (empty-array fold) and §7.3(e)
+(empty-array aggregate fold) reachable — they were previously dead code because
+the array was modeled as exactly-N elements.
 """
 
 from decimal import Decimal
 from fractions import Fraction
 
-from z3 import BoolSort, Const, IntSort, Not, StringSort
+from z3 import BoolSort, Const, Int, IntSort, Not, StringSort
 
 from .field_contracts import Schema
 from .fixed_point import to_scale14_int
@@ -43,10 +61,14 @@ from .tvl import (
     is_missing_bool,
     is_missing_int,
     is_missing_str,
+    str_def,
+    tvl_add,
+    tvl_aggregate,
     tvl_and,
     tvl_between,
     tvl_contains,
     tvl_days_between,
+    tvl_div,
     tvl_ends_with,
     tvl_eq,
     tvl_eq_bool,
@@ -63,32 +85,45 @@ from .tvl import (
     tvl_lt_str,
     tvl_lte,
     tvl_lte_str,
+    tvl_match,
+    tvl_mul,
     tvl_ne,
     tvl_ne_bool,
     tvl_ne_str,
     tvl_not,
     tvl_or,
-    tvl_add,
-    tvl_div,
-    tvl_mul,
+    tvl_round,
     tvl_starts_with,
     tvl_sub,
-    tvl_aggregate,
-    tvl_round,
-    tvl_match,
-    str_def,
     val_bool,
 )
 
 from .calendar import tvl_date_add, tvl_date_part, tvl_epoch_ms, tvl_month_last_day
 
+_COMPARE_OPS = ["eq", "ne", "gt", "gte", "lt", "lte"]
+_STRING_OPS = ["contains", "match", "starts_with", "ends_with"]
+_ARITH_OPS = ["add", "sub", "mul", "div", "round"]
+_QUANT_KINDS = ["all", "any", "none"]
+_AGGREGATE_FNS = ["count", "sum", "avg", "min", "max"]
+
 
 class CompileContext:
-    """Maps field paths to free TVL variables (schema-typed), lazily created."""
+    """Maps field paths to free variables (schema-typed), lazily created.
+
+    Scalar fields → TVL (Def | Missing). Array fields → a length free variable
+    ``len ∈ [0, cardinality]`` + ``cardinality`` raw-τ element variables.
+    Quantifier bindings are held in ``self._bindings`` during predicate compile.
+    All array length constraints accumulate in ``self.constraints`` (assert via
+    ``assume()``).
+    """
 
     def __init__(self, schema: Schema):
         self.schema = schema
         self._fields = {}
+        self._array_lens = {}
+        self._array_elems = {}
+        self._bindings = {}
+        self.constraints = []
 
     def _sort(self, type_name):
         if type_name == "bool":
@@ -98,8 +133,7 @@ class CompileContext:
         if type_name == "string":
             return TVLStr
         raise NotImplementedError(
-            f"field type {type_name!r} not in the supported subset (int/bool/string); "
-            "rational/array need cardinality support"
+            f"field type {type_name!r} not in the supported subset (int/bool/string)"
         )
 
     def _raw_sort(self, type_name):
@@ -121,25 +155,40 @@ class CompileContext:
         return self._fields[path]
 
     def var(self, path):
-        """Context variable (var node; '$' or '$.path') — a free TVL variable.
+        """Var node — a quantifier binding, or the '$' context namespace.
 
-        spec §5.3 defines var(v) = Def(ctx.$[v]) with no declared type, and the
-        verification schema (field-contracts) has no '$' entries, so the type
-        defaults to int (same fallback as an untyped field). var is currently
-        unused in rules; when it is, the '$' namespace needs a type source.
+        In a quantifier predicate, ``var(binding)`` resolves to the current
+        element (already wrapped as a TVL by ``_quantifier``). Outside a
+        quantifier, ``var('$')`` / ``var('$.path')`` is a free context variable
+        (default int — the '$' namespace has no declared type source yet).
         """
+        if path in self._bindings:
+            return self._bindings[path]
         key = f"$[{path}]"
         if key not in self._fields:
             self._fields[key] = Const(f"var[{path}]", self._sort("int"))
         return self._fields[key]
 
-    def array_element(self, path, i):
-        key = f"{path}[{i}]"
-        if key not in self._fields:
+    def array_len(self, path):
+        """Runtime length free variable for an array field (0..cardinality)."""
+        if path not in self._array_lens:
+            n = self.schema.cardinality(path)
+            v = Int(f"len[{path}]")
+            self._array_lens[path] = v
+            self.constraints.append(v >= 0)
+            self.constraints.append(v <= n)
+        return self._array_lens[path]
+
+    def array_elements(self, path):
+        """The ``cardinality`` raw-τ element variables of an array field."""
+        if path not in self._array_elems:
+            n = self.schema.cardinality(path)
             c = self.schema.get(path)
-            elem_ty = (c.element_type if c else None) or "bool"
-            self._fields[key] = Const(f"field[{key}]", self._raw_sort(elem_ty))
-        return self._fields[key]
+            elem_ty = (c.element_type if c else None) or "int"
+            self._array_elems[path] = [
+                Const(f"elem[{path}][{i}]", self._raw_sort(elem_ty)) for i in range(n)
+            ]
+        return self._array_elems[path]
 
     def missing(self, path):
         """Schema absence: the field is Missing (type-dispatched by field type)."""
@@ -155,6 +204,36 @@ class CompileContext:
     def premise(self, path):
         """Schema premise: the field is present (not Missing)."""
         return Not(self.missing(path))
+
+    def assume(self, solver):
+        """Assert all accumulated array-length constraints on ``solver``."""
+        for c in self.constraints:
+            solver.add(c)
+
+
+def _wrap_tvl(raw, elem_ty):
+    """Wrap a raw-τ array element as a present (Def) TVL value."""
+    if elem_ty == "bool":
+        return TVLBool.Def(raw)
+    if elem_ty == "string":
+        return TVLStr.Def(raw)
+    return TVLInt.Def(raw)
+
+
+def _array_path(over):
+    """Extract the array field path from an ``over`` operand (a field node)."""
+    if isinstance(over, dict) and "field" in over and len(over) == 1:
+        return str(over["field"])
+    raise NotImplementedError(
+        f"quantifier/aggregate `over` must be a {{field: ...}} node, got {over!r}"
+    )
+
+
+def _fold(fn, args):
+    acc = args[0]
+    for a in args[1:]:
+        acc = fn(acc, a)
+    return acc
 
 
 _EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
@@ -217,75 +296,134 @@ def _in(x, members):
 
 
 def compile_expr(expr, ctx: CompileContext):
-    """Compile an S-expression to a Z3 TVL expression."""
-    if isinstance(expr, list):
-        op = expr[0]
-        if op == "field":
-            return ctx.field(expr[1])
-        if op == "var":
-            return ctx.var(expr[1])
-        if op == "lit":
-            return _lit(expr[1])
-        if op == "and":
-            return tvl_and(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "or":
-            return tvl_or(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "not":
-            return tvl_not(compile_expr(expr[1], ctx))
-        if op == "eq" or op == "ne":
-            return _cmp_eq(op, compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op in ("gt", "gte", "lt", "lte"):
-            return _cmp_order(op, compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "exists":
-            return _exists(compile_expr(expr[1], ctx))
-        if op == "between":
-            return tvl_between(
-                compile_expr(expr[1], ctx), compile_expr(expr[2], ctx), compile_expr(expr[3], ctx)
-            )
-        if op == "days_between":
-            return tvl_days_between(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "contains":
-            return tvl_contains(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "starts_with":
-            return tvl_starts_with(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "ends_with":
-            return tvl_ends_with(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "length":
-            return tvl_length(compile_expr(expr[1], ctx))
-        if op == "in":
-            x = compile_expr(expr[1], ctx)
-            members = [compile_expr(m, ctx) for m in expr[2]]
-            return _in(x, members)
-        if op == "add":
-            return tvl_add(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "sub":
-            return tvl_sub(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "mul":
-            return tvl_mul(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "div":
-            return tvl_div(compile_expr(expr[1], ctx), compile_expr(expr[2], ctx))
-        if op == "aggregate":
-            fn, array_field = expr[1], expr[2]
-            n = ctx.schema.cardinality(array_field)
-            elems = [ctx.array_element(array_field, i) for i in range(n)]
-            return tvl_aggregate(fn, elems)
-        if op == "round":
-            return tvl_round(compile_expr(expr[1], ctx))
-        if op == "match":
-            return tvl_match(compile_expr(expr[1], ctx), expr[2])
-        if op == "date_part":
-            return tvl_date_part(expr[1], compile_expr(expr[2], ctx))
-        if op == "month_last_day":
-            return tvl_month_last_day(compile_expr(expr[1], ctx))
-        if op == "epoch_ms":
-            return tvl_epoch_ms(compile_expr(expr[1], ctx))
-        if op == "date_add":
-            return tvl_date_add(expr[1], compile_expr(expr[2], ctx), compile_expr(expr[3], ctx))
-        if op in ("all", "any", "none"):
-            return _quantifier(op, expr[1], ctx)
-        raise NotImplementedError(f"op {op!r} not in the supported subset")
-    # bare literal
+    """Compile a SPEC §12 S-expression (single-key object) to a Z3 TVL expression."""
+    if isinstance(expr, dict):
+        return _compile_node(expr, ctx)
+    # bare value → literal
     return _lit(expr)
+
+
+def _compile_node(expr, ctx):
+    keys = list(expr.keys())
+    if len(keys) != 1:
+        raise NotImplementedError(
+            f"each S-expression node must have exactly one key, got {keys}"
+        )
+    key = keys[0]
+    val = expr[key]
+
+    if key == "field":
+        return ctx.field(str(val))
+    if key == "var":
+        return ctx.var(str(val))
+    if key == "and":
+        return _fold(tvl_and, [compile_expr(a, ctx) for a in val])
+    if key == "or":
+        return _fold(tvl_or, [compile_expr(a, ctx) for a in val])
+    if key == "not":
+        return tvl_not(compile_expr(val, ctx))
+
+    if key in _COMPARE_OPS:
+        left, right = val[0], val[1]
+        # G1 (SPEC §7.3(a)): == null / != null sense field presence.
+        if right is None or left is None:
+            other = right if left is None else left
+            sense = _exists(compile_expr(other, ctx))
+            return sense if key == "ne" else tvl_not(sense)
+        if key in ("eq", "ne"):
+            return _cmp_eq(key, compile_expr(left, ctx), compile_expr(right, ctx))
+        return _cmp_order(key, compile_expr(left, ctx), compile_expr(right, ctx))
+
+    if key == "in":
+        x = compile_expr(val[0], ctx)
+        members = [compile_expr(m, ctx) for m in val[1]]
+        return _in(x, members)
+
+    if key in _STRING_OPS:
+        if key == "match":
+            return tvl_match(compile_expr(val[0], ctx), val[1])
+        fn = {
+            "contains": tvl_contains,
+            "starts_with": tvl_starts_with,
+            "ends_with": tvl_ends_with,
+        }[key]
+        return fn(compile_expr(val[0], ctx), compile_expr(val[1], ctx))
+
+    if key == "exists":
+        return _exists(compile_expr(val, ctx))
+    if key == "length":
+        return tvl_length(compile_expr(val, ctx))
+    if key == "between":
+        return tvl_between(
+            compile_expr(val[0], ctx), compile_expr(val[1], ctx), compile_expr(val[2], ctx)
+        )
+
+    if key in _QUANT_KINDS:
+        return _quantifier(key, val, ctx)
+
+    if key in _ARITH_OPS:
+        return _arith(key, [compile_expr(a, ctx) for a in val])
+
+    if key == "days_between":
+        return tvl_days_between(compile_expr(val[0], ctx), compile_expr(val[1], ctx))
+    if key == "epoch_ms":
+        return tvl_epoch_ms(compile_expr(val, ctx))
+    if key == "date_add":
+        return tvl_date_add(val["unit"], compile_expr(val["base"], ctx), compile_expr(val["amount"], ctx))
+    if key == "date_part":
+        return tvl_date_part(val["unit"], compile_expr(val["arg"], ctx))
+    if key == "month_last_day":
+        return tvl_month_last_day(compile_expr(val, ctx))
+
+    if key in _AGGREGATE_FNS:
+        return _aggregate(key, val, ctx)
+
+    raise NotImplementedError(f"unknown S-expression key: {key!r}")
+
+
+def _arith(op, args):
+    if op == "round":
+        if len(args) != 1:
+            raise NotImplementedError("round requires exactly one operand")
+        return tvl_round(args[0])
+    fn = {"add": tvl_add, "sub": tvl_sub, "mul": tvl_mul, "div": tvl_div}[op]
+    if len(args) < 2:
+        raise NotImplementedError(f"{op} requires at least two operands")
+    return _fold(fn, args)
+
+
+def _quantifier(kind, q, ctx):
+    """Compile a quantifier {all|any|none: {binding, over, predicate}}.
+
+    Binds ``binding`` to each of the ``cardinality`` raw-τ elements and compiles
+    the predicate with that binding; only indices ``i < len`` participate (the
+    guard is applied inside ``tvl_all/any/none`` via the length variable).
+    """
+    binding = str(q["binding"])
+    over = q["over"]
+    predicate = q["predicate"]
+    arr_path = _array_path(over)
+    length = ctx.array_len(arr_path)
+    elems = ctx.array_elements(arr_path)
+    c = ctx.schema.get(arr_path)
+    elem_ty = (c.element_type if c else None) or "int"
+
+    preds = []
+    for i in range(len(elems)):
+        ctx._bindings[binding] = _wrap_tvl(elems[i], elem_ty)
+        preds.append(val_bool(compile_expr(predicate, ctx)))
+        del ctx._bindings[binding]
+
+    fn = {"all": tvl_all, "any": tvl_any, "none": tvl_none}[kind]
+    return fn(length, preds)
+
+
+def _aggregate(fn, over, ctx):
+    """Compile an aggregate {count|sum|avg|min|max: over} over a length-variable array."""
+    arr_path = _array_path(over)
+    length = ctx.array_len(arr_path)
+    elems = ctx.array_elements(arr_path)
+    return tvl_aggregate(fn, length, elems)
 
 
 def _lit(value):
@@ -307,10 +445,3 @@ def _lit(value):
     if isinstance(value, str):
         return str_def(value)
     raise NotImplementedError(f"literal {value!r}")
-
-
-def _quantifier(op, array_field, ctx):
-    n = ctx.schema.cardinality(array_field)
-    elems = [ctx.array_element(array_field, i) for i in range(n)]
-    fn = {"all": tvl_all, "any": tvl_any, "none": tvl_none}[op]
-    return fn(elems)

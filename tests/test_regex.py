@@ -243,5 +243,5 @@ def test_compiler_match_integration():
     s = Schema()
     s.add(FieldContract(field="tool.name", type="string"))
     # match with a regex alternation (not just a literal)
-    assert can_fire(["match", ["field", "tool.name"], "(rm|shutdown|reboot)"], s, premises=["tool.name"]) is True
-    assert can_fire(["match", ["field", "tool.name"], "^/etc/"], s, premises=["tool.name"]) is True
+    assert can_fire({"match": [{"field": "tool.name"}, "(rm|shutdown|reboot)"]}, s, premises=["tool.name"]) is True
+    assert can_fire({"match": [{"field": "tool.name"}, "^/etc/"]}, s, premises=["tool.name"]) is True

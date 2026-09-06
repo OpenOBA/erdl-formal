@@ -33,6 +33,7 @@ from z3 import (
     If,
     InRe,
     IntSort,
+    IntVal,
     Length,
     Not,
     Or,
@@ -296,48 +297,59 @@ def tvl_sub(a, b):
     return _arith_binary(a, b, lambda x, y: x - y)
 
 
-# --- aggregate (count/sum, empty-array collapse) ---
+# --- aggregate (count/sum/avg/min/max over a length-variable array) ---
 
-def _fold_min(elements):
-    """Integer minimum via an If-fold (elements are raw τ, never Missing)."""
+def _guarded_sum(elements, length):
+    """Σ elements[i] for i < length (0 for i >= length). length is a Z3 Int var."""
+    if not elements:
+        return IntVal(0)
+    return Sum([If(i < length, elements[i], 0) for i in range(len(elements))])
+
+
+def _fold_min(elements, length):
+    """min over the first `length` elements (length >= 1 assumed; guarded by caller)."""
     m = elements[0]
-    for e in elements[1:]:
-        m = If(e < m, e, m)
+    for i in range(1, len(elements)):
+        m = If(And(i < length, elements[i] < m), elements[i], m)
     return m
 
 
-def _fold_max(elements):
-    """Integer maximum via an If-fold (elements are raw τ, never Missing)."""
+def _fold_max(elements, length):
+    """max over the first `length` elements (length >= 1 assumed; guarded by caller)."""
     m = elements[0]
-    for e in elements[1:]:
-        m = If(e > m, e, m)
+    for i in range(1, len(elements)):
+        m = If(And(i < length, elements[i] > m), elements[i], m)
     return m
 
 
-def tvl_aggregate(fn, elements):
-    """aggregate over a fixed-length array of raw τ elements. fn in {count, sum, avg, min, max}.
+def tvl_aggregate(fn, length, elements):
+    """aggregate over an array of runtime length `length` (0..cardinality).
 
-    count([])=0 (len=0); sum([])=0 (Sum([])=0) — empty identity.
-    avg/min/max([]) fold to false (Missing — E11 leaf-collapse makes every
-    comparison false), per spec §7.3(e) safe-failure folding.
+    `length` is a Z3 Int free variable; `elements` are `cardinality` raw-τ element
+    variables (raw τ, not TVL). Only elements with index < length participate.
+
+    count(empty)=0 · sum(empty)=0 — natural identities.
+    avg/min/max(empty) → Missing (E11 leaf-collapse folds every comparison false),
+    per SPEC §7.3(e) safe-failure folding (avoids div-by-zero / ±∞).
     """
+    n = len(elements)
     if fn == "count":
-        return TVLInt.Def(len(elements))
+        return TVLInt.Def(length)
     if fn == "sum":
-        return TVLInt.Def(Sum(elements))
+        return TVLInt.Def(_guarded_sum(elements, length))
     if fn == "avg":
-        if not elements:
-            return TVLInt.Missing
-        # scale-14 fixed-point avg: round_half_even(sum / count)
-        return TVLInt.Def(_round_half_even_div_signed(Sum(elements), len(elements)))
+        s = _guarded_sum(elements, length)
+        # round_half_even(sum / length) — length >= 1 (guarded), scale-14 fixed point
+        return If(length == 0, TVLInt.Missing,
+                  TVLInt.Def(_round_half_even_div_signed(s, length)))
     if fn == "min":
-        if not elements:
+        if n == 0:
             return TVLInt.Missing
-        return TVLInt.Def(_fold_min(elements))
+        return If(length == 0, TVLInt.Missing, TVLInt.Def(_fold_min(elements, length)))
     if fn == "max":
-        if not elements:
+        if n == 0:
             return TVLInt.Missing
-        return TVLInt.Def(_fold_max(elements))
+        return If(length == 0, TVLInt.Missing, TVLInt.Def(_fold_max(elements, length)))
     raise NotImplementedError(f"aggregate {fn!r} not supported")
 
 

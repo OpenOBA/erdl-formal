@@ -1,0 +1,19 @@
+refactor(verifier): rewrite S-expression form from list to SPEC §12 single-key object
+
+The verifier previously encoded the expression tree as a list form
+(["gt",["field","a"],["field","b"]]) that diverged from the engine/SPEC/vectors
+single-key object form ({"gt":[{"field":"a"},{"field":"b"}]}). This made the
+34-node SMT coverage a false claim and broke quantifiers entirely (Sort mismatch).
+
+Changes:
+- compiler.py: compile_expr/_compile_node accept the object form; add null
+  literal dispatch for == null / != null (G1); length-variable array modeling.
+- tvl.py: IntVal import; _guarded_sum empty returns IntVal(0).
+- quantifiers.py: tvl_all/any/none take (length, preds) with E8 empty fold.
+- calendar.py: date_add amount MUST be integer (G3, SPEC §7.3(f)).
+- properties.py: object-form fixture alignment.
+- replay/crosscheck-vectors.py + crosscheck-calendar.py: read answers from
+  v-engine-answers.json (keyed by id) instead of the nonexistent v.expected.
+- tests: all 16 test files converted to object form.
+
+Tests: 222 passed. Replay: arithmetic 7/7, calendar 6/6.

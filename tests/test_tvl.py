@@ -16,7 +16,7 @@
 
 import pytest
 
-from z3 import is_false, is_true, simplify
+from z3 import IntVal, is_false, is_true, simplify
 
 from erdl_formal.tvl import (
     TVLBool,
@@ -131,4 +131,4 @@ def test_is_missing_bool():
 
 def test_aggregate_unsupported_fn_raises():
     with pytest.raises(NotImplementedError):
-        tvl_aggregate("median", [])
+        tvl_aggregate("median", IntVal(0), [])

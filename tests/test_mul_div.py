@@ -91,5 +91,5 @@ def test_compiler_routes_mul_div():
     s.add(FieldContract(field="a", type="int"))
     s.add(FieldContract(field="b", type="int"))
     # a * b > 0 satisfiable; a / b > 0 satisfiable
-    assert can_fire(["gt", ["mul", ["field", "a"], ["field", "b"]], ["lit", 0]], s, premises=["a", "b"]) is True
-    assert can_fire(["gt", ["div", ["field", "a"], ["field", "b"]], ["lit", 0]], s, premises=["a", "b"]) is True
+    assert can_fire({"gt": [{"mul": [{"field": "a"}, {"field": "b"}]}, 0]}, s, premises=["a", "b"]) is True
+    assert can_fire({"gt": [{"div": [{"field": "a"}, {"field": "b"}]}, 0]}, s, premises=["a", "b"]) is True

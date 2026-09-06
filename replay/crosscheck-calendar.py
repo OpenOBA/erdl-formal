@@ -38,11 +38,17 @@ def main():
     with open(VECTORS, encoding="utf-8") as f:
         vectors = json.load(f)["vectors"]
 
+    # Oracle isolation (ER9): committed vectors carry no `expected`; re-attach
+    # from the gitignored answers file, keyed by vector id.
+    answers_path = os.path.join(os.path.dirname(__file__), "..", "..", "erdl-vectors", "v-engine-answers.json")
+    with open(answers_path, encoding="utf-8") as f:
+        answers = json.load(f)
+
     total = passed = 0
     for v in vectors:
         if v["category"] != "V-ENGINE" or v.get("node") not in ("date_part", "month_last_day", "date_add"):
             continue
-        exp = v["expected"]
+        exp = answers.get(v["id"])
         if exp["errored"]:
             continue
         expr = v["expr_tree"]

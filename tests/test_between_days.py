@@ -69,5 +69,5 @@ def test_days_between_missing_is_missing():
 def test_compiler_between():
     s = Schema()
     s.add(FieldContract(field="amount", type="int"))
-    expr = ["between", ["field", "amount"], ["lit", 100], ["lit", 500]]
+    expr = {"between": [{"field": "amount"}, 100, 500]}
     assert can_fire(expr, s, premises=["amount"]) is True

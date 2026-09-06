@@ -38,6 +38,7 @@ def can_fire(rule_expr, schema, premises=(), missing=()):
     ctx = CompileContext(schema)
     cond = compile_expr(rule_expr, ctx)
     s = Solver()
+    ctx.assume(s)
     for p in premises:
         s.add(ctx.premise(p))
     for m in missing:
@@ -93,6 +94,7 @@ def subsumes(a_expr, b_expr, schema):
     a = compile_expr(a_expr, ctx)
     b = compile_expr(b_expr, ctx)
     s = Solver()
+    ctx.assume(s)
     s.add(val_bool(a), Not(val_bool(b)))
     return s.check() != sat
 
@@ -108,5 +110,6 @@ def disjoint(a_expr, b_expr, schema):
     a = compile_expr(a_expr, ctx)
     b = compile_expr(b_expr, ctx)
     s = Solver()
+    ctx.assume(s)
     s.add(val_bool(a), val_bool(b))
     return s.check() != sat

@@ -78,4 +78,4 @@ def test_compiler_routes_epoch_ms():
     s = Schema()
     s.add(FieldContract(field="d1", type="string"))
     # epoch_ms(d1) > 0 is satisfiable (d1 can be a date after 1970-01-01)
-    assert can_fire(["gt", ["epoch_ms", ["field", "d1"]], ["lit", 0]], s, premises=["d1"]) is True
+    assert can_fire({"gt": [{"epoch_ms": {"field": "d1"}}, 0]}, s, premises=["d1"]) is True
