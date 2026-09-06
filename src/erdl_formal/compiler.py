@@ -496,6 +496,10 @@ def _arith(op, args):
             raise NotImplementedError("round requires exactly one operand")
         return tvl_round(args[0])
     fn = {"add": tvl_add, "sub": tvl_sub, "mul": tvl_mul, "div": tvl_div}[op]
+    if op in ("sub", "div") and len(args) != 2:
+        # sub/div are binary (engine: rats.length !== 2 → type_mismatch → null).
+        # Align the verifier: non-binary folds to Missing, not left-fold.
+        return TVLInt.Missing
     if len(args) < 2:
         raise NotImplementedError(f"{op} requires at least two operands")
     return _fold(fn, args)
@@ -550,7 +554,10 @@ def _lit(value):
     if isinstance(value, bool):
         return TVLBool.Def(value)
     if isinstance(value, int):
-        return TVLInt.Def(value)
+        # scale-14 fixed point: integer literal 1 == 10^14. Aligns int literals
+        # with float literals and the mul/div/round fixed-point kernels (TVLInt
+        # values are scale-14 integers, per fixed_point.py).
+        return TVLInt.Def(value * 10**14)
     if isinstance(value, float):
         # Decimal literals (money thresholds) enter as float; convert through
         # the shortest round-trip decimal (str) so 0.1 stays exactly 1/10, and

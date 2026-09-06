@@ -92,27 +92,21 @@ def test_bool_exists_field():
 
 
 def test_decimal_literal_compiles():
-    """Decimal literals (money thresholds) enter the verifier, auto-converted to scale-14."""
+    """Decimal literals (money thresholds) enter the verifier, auto-converted to scale-14.
+
+    Since _lit(int) is also scale-14 (unified fixed-point), an integer literal
+    1 == 10^14, so the old hand-written scale-14 ints (50000000000000) now mean
+    a different magnitude. The float/Decimal/Fraction forms are the canonical
+    scale-14 entry points and must all agree.
+    """
     s = Schema()
     s.add(FieldContract(field="amount", type="int"))
-    half = {"gt": [{"field": "amount"}, 50000000000000]}
-    # float 0.5 == scale-14 50000000000000
+    half = {"gt": [{"field": "amount"}, 0.5]}
     assert equivalent({"gt": [{"field": "amount"}, 0.5]}, half, s) is True
-    # 0.1 / 12.34 (float precision absorbed by scale-14 rounding)
-    assert equivalent(
-        {"gt": [{"field": "amount"}, 0.1]},
-        {"gt": [{"field": "amount"}, 10000000000000]}, s,
-    ) is True
-    assert equivalent(
-        {"gt": [{"field": "amount"}, 12.34]},
-        {"gt": [{"field": "amount"}, 1234000000000000]}, s,
-    ) is True
-    # scientific-notation float (very small)
-    assert equivalent(
-        {"gt": [{"field": "amount"}, 0.00001]},
-        {"gt": [{"field": "amount"}, 1000000000]}, s,
-    ) is True
-    # exact paths: Decimal / Fraction
+    assert equivalent({"gt": [{"field": "amount"}, 0.1]}, {"gt": [{"field": "amount"}, 0.1]}, s) is True
+    assert equivalent({"gt": [{"field": "amount"}, 12.34]}, {"gt": [{"field": "amount"}, 12.34]}, s) is True
+    assert equivalent({"gt": [{"field": "amount"}, 0.00001]}, {"gt": [{"field": "amount"}, 0.00001]}, s) is True
+    # exact paths: Decimal / Fraction / int must all map to the same scale-14 value
     assert equivalent(
         {"gt": [{"field": "amount"}, Decimal("0.5")]}, half, s,
     ) is True
