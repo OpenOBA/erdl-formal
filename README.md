@@ -6,7 +6,7 @@ A formal verifier for the ERDL expression kernel — proving rule safety over al
 
 There are two kinds of determinism: the determinism tests cover, and the determinism mathematics proves. erdl-formal provides the latter.
 
->"erdl-formal formally verifies ERDL v2.1's expression kernel and evaluation semantics (§5, §7, Appendix A), covering all 34 nodes and the E1–E12 constraints. The spec's other layers (document structure, gloss rendering, integration modes) are guaranteed by test vectors and engineering verification."
+>"erdl-formal formally verifies ERDL v2.1's expression kernel and evaluation semantics (§5, §7, Appendix A), covering all 34 nodes and the evaluation-semantics constraints E2/E8/E10/E11/E12 (plus E3 division-by-zero). The engine-layer constraints E1 (purity), E4 (resource limits), E5 (when/expr exclusivity), E6 (tree hashing), E7 (single evaluator), and E9 (no wall clock) are runtime/compile-layer concerns, not kernel evaluation semantics — the spec's other layers (document structure, gloss rendering, integration modes) are guaranteed by test vectors and engineering verification."
 
 ## Why now: LLMs have brute force. They don't have direction.
 
@@ -74,7 +74,7 @@ No test cases. No sampling. Z3 searches the space of **all integers** for an inp
 
 Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **all rule-sets** — not sampling, a full proof. Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
-## 34/34 nodes, E1–E12 semantics
+## 34/34 nodes, E2/E8/E10/E11/E12 evaluation semantics
 
 - **All 34 nodes have SMT encodings**: value / logic / comparison / set / string / existence / quantifier / arithmetic / time / aggregate (comparison and existence dispatch by field type: int / string / bool; `epoch_ms` supports date-only and ISO 8601 datetime with time / offset).
 - The hard semantics aren't "roughly right" — they are **bit-exact**:

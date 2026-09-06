@@ -275,7 +275,10 @@ def _cmp_eq(op, a, b):
             return _agg_cmp_num(op, agg, other, is_missing_int(other), val_int(other))
         raise TypeError(f"eq/ne: AggVal vs {so} unsupported")
     if sa != sb:
-        raise TypeError(f"eq/ne operand sort mismatch: {sa} vs {sb}")
+        # SPEC §7.3(a): a type-mismatched comparison returns false (no implicit
+        # conversion) — not a compile error. Aligns the verifier with the engine
+        # (G4 fix) and with the frozen vectors.
+        return TVLBool.Def(False)
     if sa == TVLInt:
         return _EQ_NE_INT[op](a, b)
     if sa == TVLStr:
@@ -297,7 +300,8 @@ def _cmp_order(op, a, b):
             return _agg_cmp_num(op, agg, other, is_missing_int(other), val_int(other))
         raise TypeError(f"ordering op {op!r}: AggVal vs {so} unsupported")
     if sa != sb:
-        raise TypeError(f"ordering op {op!r} operand sort mismatch: {sa} vs {sb}")
+        # SPEC §7.3(a): type-mismatched ordering folds false (no implicit conversion).
+        return TVLBool.Def(False)
     if sa == TVLInt:
         return _ORDER_INT[op](a, b)
     if sa == TVLStr:
@@ -363,10 +367,21 @@ def _compile_node(expr, ctx):
 
     if key in _COMPARE_OPS:
         left, right = val[0], val[1]
-        # G1 (SPEC §7.3(a)): == null / != null sense field presence.
-        if right is None or left is None:
-            other = right if left is None else left
-            sense = _exists(compile_expr(other, ctx))
+        # null literal handling (SPEC §7.3(a) + §5.2, left-anchored fail-closed).
+        # Engine semantics (verified against @openoba/erdl):
+        #   left nullish & right nullish → eq=true, ne=false
+        #   left nullish, right non-null → eq=false, ne=false (fail-closed)
+        #   left non-null, right nullish → eq=false, ne=true (!= null senses presence)
+        if left is None or right is None:
+            if left is None and right is None:
+                return TVLBool.Def(True) if key == "eq" else TVLBool.Def(False)
+            if left is None:
+                # null OP <non-null>: eq senses absence (eq = not exists), ne is always false.
+                if key == "ne":
+                    return TVLBool.Def(False)
+                return tvl_not(_exists(compile_expr(right, ctx)))
+            # right is None, left is non-null: == null senses absence; != null senses presence.
+            sense = _exists(compile_expr(left, ctx))
             return sense if key == "ne" else tvl_not(sense)
         if key in ("eq", "ne"):
             return _cmp_eq(key, compile_expr(left, ctx), compile_expr(right, ctx))
