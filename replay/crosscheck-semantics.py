@@ -164,8 +164,8 @@ def eval_against(expr_tree, context, expected, node=""):
             solver.add(is_missing_bool(expr))
             return "sat" if solver.check() == sat else "unsat"
         return None
-    if vt == "string":
-        # value == expected string (NFC literal / scalar string field)
+    if vt in ("string", "date"):
+        # value == expected string (NFC literal / date string result)
         if expr.sort() == TVLStr:
             solver.add(Not(is_missing_str(expr)))
             solver.add(val_str(expr) == StringVal(expected["value"]))
@@ -209,7 +209,7 @@ def main():
     with open(answers_path, encoding="utf-8") as f:
         answers = json.load(f)
 
-    stats = {"boolean": [0, 0], "null": [0, 0], "rational": [0, 0], "number": [0, 0], "undefined": [0, 0], "string": [0, 0]}
+    stats = {"boolean": [0, 0], "null": [0, 0], "rational": [0, 0], "number": [0, 0], "undefined": [0, 0], "string": [0, 0], "date": [0, 0]}
     fails = []
     skipped = 0
     for v in vectors:
@@ -219,7 +219,7 @@ def main():
         if not exp or exp.get("errored"):
             continue
         vt = exp.get("value_type")
-        if vt not in ("boolean", "null", "rational", "number", "undefined", "string"):
+        if vt not in ("boolean", "null", "rational", "number", "undefined", "string", "date"):
             skipped += 1
             continue
         try:
@@ -235,9 +235,7 @@ def main():
             want = "sat" if exp["value"] is True else "unsat"
         elif vt == "null":
             want = "unsat"
-        elif vt == "undefined":
-            want = "sat"
-        elif vt == "string":
+        elif vt in ("undefined", "string", "date"):
             want = "sat"
         else:  # rational/number
             want = "sat"
@@ -247,7 +245,7 @@ def main():
             stats[vt][1] += 1
             fails.append((v["id"], vt, want, got))
 
-    for vt in ("boolean", "null", "rational", "number", "undefined", "string"):
+    for vt in ("boolean", "null", "rational", "number", "undefined", "string", "date"):
         p, f_ = stats[vt]
         print(f"  {vt}: {p} consistent, {f_} mismatch")
     print(f"  skipped: {skipped}")

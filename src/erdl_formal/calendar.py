@@ -20,9 +20,9 @@ the calendar layer's cross-implementation consistency via dual-implementation
 vectors; this SMT encoding additionally enables static verification.
 """
 
-from z3 import And, Concat, Extract, If, InRe, Length, Or, Range, StrToInt
+from z3 import And, Concat, Extract, If, InRe, IntToStr, Length, Not, Or, Range, StrToInt, StringVal
 
-from .tvl import TVLInt, is_missing_int, is_missing_str, val_int, val_str
+from .tvl import TVLInt, TVLStr, is_missing_int, is_missing_str, val_int, val_str
 
 DAY_MS = 86400000
 
@@ -67,12 +67,44 @@ def _z(epoch_ms):
     return val_int(epoch_ms) / DAY_MS
 
 
-def tvl_date_part(unit, epoch):
-    """date_part{unit}: extract a UTC component from an epoch-ms timestamp."""
+def _pad2(n):
+    """Zero-pad a non-negative int to 2 ASCII digits."""
+    return If(n < 10, Concat(StringVal("0"), IntToStr(n)), IntToStr(n))
+
+
+def _pad3(n):
+    """Zero-pad a non-negative int to 3 ASCII digits (milliseconds)."""
+    return If(n < 10, Concat(StringVal("00"), IntToStr(n)),
+              If(n < 100, Concat(StringVal("0"), IntToStr(n)), IntToStr(n)))
+
+
+def _format_datetime(epoch_ms):
+    """epoch ms → 'YYYY-MM-DDTHH:MM:SS.mmmZ' (UTC, full datetime; ms 000 at whole-second precision)."""
+    y, m, d = civil_from_days(epoch_ms / DAY_MS)
+    h = (epoch_ms / 3600000) % 24
+    mi = (epoch_ms / 60000) % 60
+    se = (epoch_ms / 1000) % 60
+    ms = epoch_ms % 1000
+    return Concat(
+        IntToStr(y), StringVal("-"), _pad2(m), StringVal("-"), _pad2(d),
+        StringVal("T"), _pad2(h), StringVal(":"), _pad2(mi), StringVal(":"), _pad2(se),
+        StringVal("."), _pad3(ms), StringVal("Z"),
+    )
+
+
+def _parse_date_arg(arg):
+    """Date string node argument → (valid, epoch_ms)."""
+    return _epoch_ms_parse(val_str(arg))
+
+
+def tvl_date_part(unit, arg):
+    """date_part{unit}: date string → integer UTC component (§7.3(f))."""
+
+    valid, arg_ms = _parse_date_arg(arg)
 
     def body():
-        z = _z(epoch)
-        e = val_int(epoch)
+        z = arg_ms / DAY_MS
+        e = arg_ms
         y, m, d = civil_from_days(z)
         return {
             "year": y,
@@ -84,56 +116,62 @@ def tvl_date_part(unit, epoch):
             "day_of_week": (z + 3) % 7 + 1,  # 1=Monday ... 7=Sunday
         }[unit]
 
-    return If(is_missing_int(epoch), TVLInt.Missing, TVLInt.Def(body()))
+    return If(Or(is_missing_str(arg), Not(valid)), TVLInt.Missing, TVLInt.Def(body()))
 
 
-def tvl_month_last_day(epoch):
-    """month_last_day: last day of the month as a full date (erdl endOfMonth),
-    returned as that day's epoch ms."""
+def tvl_month_last_day(arg):
+    """month_last_day: date string → date string (last day of the month)."""
+
+    valid, arg_ms = _parse_date_arg(arg)
 
     def body():
-        y, m, _ = civil_from_days(_z(epoch))
-        return days_from_civil(y, m, days_in_month(y, m)) * DAY_MS
+        y, m, _ = civil_from_days(arg_ms / DAY_MS)
+        return _format_datetime(days_from_civil(y, m, days_in_month(y, m)) * DAY_MS)
 
-    return If(is_missing_int(epoch), TVLInt.Missing, TVLInt.Def(body()))
+    return If(Or(is_missing_str(arg), Not(valid)), TVLStr.Missing, TVLStr.Def(body()))
 
 
 def tvl_date_add(unit, base, amount):
-    """date_add{unit}: add an integer amount (years/months/days/hours), UTC + month-end clamp.
+    """date_add{unit}: date string → date string (UTC + month-end clamp, §7.3(f)).
 
-    SPEC v2.1 §7.3(f): the ``amount`` MUST be an integer (a duration is an integer
-    unit; half-even rounding of "add 1.5 months" has no business meaning). A
+    The ``amount`` MUST be an integer (a duration is an integer unit); a
     non-integer amount (scale-14 value not divisible by 10^14) folds to Missing.
     """
 
+    valid, base_ms = _parse_date_arg(base)
+    n = val_int(amount) / 10 ** 14  # amount scale-14 → integer step
+
     def body():
-        z = _z(base)
-        n = val_int(amount) / 10 ** 14  # amount is scale-14 → integer step (amount MUST be integer)
+        z = base_ms / DAY_MS
         if unit == "days":
-            return (z + n) * DAY_MS
-        if unit == "hours":
-            return z * DAY_MS + n * 3600000
-        y, m, d = civil_from_days(z)
-        if unit == "months":
-            total = y * 12 + (m - 1) + n
-            ny = total / 12
-            nm = total % 12 + 1
-            nd = If(d > days_in_month(ny, nm), days_in_month(ny, nm), d)
-            return days_from_civil(ny, nm, nd) * DAY_MS
-        if unit == "years":
-            ny = y + n
-            nd = If(d > days_in_month(ny, m), days_in_month(ny, m), d)
-            return days_from_civil(ny, m, nd) * DAY_MS
-        raise NotImplementedError(f"date_add unit {unit!r}")
+            result = (z + n) * DAY_MS
+        elif unit == "hours":
+            result = z * DAY_MS + n * 3600000
+        else:
+            y, m, d = civil_from_days(z)
+            if unit == "months":
+                total = y * 12 + (m - 1) + n
+                ny = total / 12
+                nm = total % 12 + 1
+                nd = If(d > days_in_month(ny, nm), days_in_month(ny, nm), d)
+                result = days_from_civil(ny, nm, nd) * DAY_MS
+            elif unit == "years":
+                ny = y + n
+                nd = If(d > days_in_month(ny, m), days_in_month(ny, m), d)
+                result = days_from_civil(ny, m, nd) * DAY_MS
+            else:
+                raise NotImplementedError(f"date_add unit {unit!r}")
+        return _format_datetime(result)
 
     return If(
         Or(
-            is_missing_int(base),
+            is_missing_str(base),
+            Not(valid),
             is_missing_int(amount),
             val_int(amount) % 10 ** 14 != 0,  # non-integer amount → type_mismatch → Missing
         ),
-        TVLInt.Missing,
-        TVLInt.Def(body()),
+        TVLStr.Missing,
+        TVLStr.Def(body()),
     )
 
 

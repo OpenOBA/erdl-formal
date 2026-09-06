@@ -29,7 +29,7 @@ from erdl_formal.calendar import (
     tvl_date_part,
     tvl_month_last_day,
 )
-from erdl_formal.tvl import TVLInt, val_int
+from erdl_formal.tvl import TVLInt, is_missing_int, is_missing_str, str_def, val_int, val_str
 
 
 def epoch_ms(s):
@@ -38,6 +38,10 @@ def epoch_ms(s):
 
 def _val(v):
     return simplify(val_int(v)).as_long()
+
+
+def _val_str(v):
+    return simplify(val_str(v)).as_string()
 
 
 # --- civil algorithm sanity ---
@@ -68,59 +72,58 @@ def test_days_in_month():
     assert simplify(days_in_month(2023, 4)).as_long() == 30
 
 
-# --- calendar nodes ---
+# --- calendar nodes (string semantics) ---
 
 
 def test_date_part_year():
-    assert _val(tvl_date_part("year", TVLInt.Def(epoch_ms("2026-01-01")))) == 2026
+    assert _val(tvl_date_part("year", str_def("2026-01-01"))) == 2026
 
 
 def test_date_part_day_of_week():
     # 2026-01-01 is Thursday → 4 (1=Monday...7=Sunday)
-    assert _val(tvl_date_part("day_of_week", TVLInt.Def(epoch_ms("2026-01-01")))) == 4
+    assert _val(tvl_date_part("day_of_week", str_def("2026-01-01"))) == 4
 
 
 def test_month_last_day_leap():
-    # month_last_day("2024-02-15") = full date "2024-02-29" (erdl endOfMonth)
-    assert _val(tvl_month_last_day(TVLInt.Def(epoch_ms("2024-02-15")))) == epoch_ms("2024-02-29")
+    # month_last_day("2024-02-15") = full datetime "2024-02-29T00:00:00.000Z" (erdl endOfMonth)
+    assert _val_str(tvl_month_last_day(str_def("2024-02-15"))) == "2024-02-29T00:00:00.000Z"
 
 
 def test_date_add_months_clamp():
     # 2026-01-31 + 1 month → 2026-02-28 (month-end clamp)
-    got = _val(tvl_date_add("months", TVLInt.Def(epoch_ms("2026-01-31")), TVLInt.Def(1 * 10 ** 14)))
-    assert got == epoch_ms("2026-02-28")
+    got = _val_str(tvl_date_add("months", str_def("2026-01-31"), TVLInt.Def(1 * 10 ** 14)))
+    assert got == "2026-02-28T00:00:00.000Z"
 
 
 def test_date_add_days():
-    got = _val(tvl_date_add("days", TVLInt.Def(epoch_ms("2026-01-01")), TVLInt.Def(1 * 10 ** 14)))
-    assert got == epoch_ms("2026-01-02")
+    got = _val_str(tvl_date_add("days", str_def("2026-01-01"), TVLInt.Def(1 * 10 ** 14)))
+    assert got == "2026-01-02T00:00:00.000Z"
 
 
 def test_date_add_hours():
-    got = _val(tvl_date_add("hours", TVLInt.Def(epoch_ms("2026-01-01T00:00:00")), TVLInt.Def(24 * 10 ** 14)))
-    assert got == epoch_ms("2026-01-02T00:00:00")
+    got = _val_str(tvl_date_add("hours", str_def("2026-01-01T00:00:00"), TVLInt.Def(24 * 10 ** 14)))
+    assert got == "2026-01-02T00:00:00.000Z"
 
 
 def test_date_add_years_leap_clamp():
     # 2024-02-29 + 1 year → 2025-02-28 (non-leap clamp)
-    got = _val(tvl_date_add("years", TVLInt.Def(epoch_ms("2024-02-29")), TVLInt.Def(1 * 10 ** 14)))
-    assert got == epoch_ms("2025-02-28")
+    got = _val_str(tvl_date_add("years", str_def("2024-02-29"), TVLInt.Def(1 * 10 ** 14)))
+    assert got == "2025-02-28T00:00:00.000Z"
 
 
 def test_date_add_unsupported_unit_raises():
     with pytest.raises(NotImplementedError):
-        tvl_date_add("seconds", TVLInt.Def(epoch_ms("2026-01-01")), TVLInt.Def(1 * 10 ** 14))
+        tvl_date_add("seconds", str_def("2026-01-01"), TVLInt.Def(1 * 10 ** 14))
 
 
 def test_date_add_non_integer_amount_folds_missing():
     """G3 (SPEC §7.3(f)): amount MUST be an integer; a non-integer scale-14 amount folds to Missing."""
-    from erdl_formal.tvl import is_missing_int
     # 1.5 months = 150000000000000 scale-14 units → not divisible by 10^14 → Missing
-    got = tvl_date_add("months", TVLInt.Def(epoch_ms("2024-01-15")), TVLInt.Def(15 * 10 ** 13))
-    assert is_true(simplify(is_missing_int(got)))
+    got = tvl_date_add("months", str_def("2024-01-15"), TVLInt.Def(15 * 10 ** 13))
+    assert is_true(simplify(is_missing_str(got)))
 
 
 def test_date_add_integer_amount_ok():
     """An integer amount (divisible by 10^14) proceeds normally."""
-    got = _val(tvl_date_add("months", TVLInt.Def(epoch_ms("2024-01-15")), TVLInt.Def(2 * 10 ** 14)))
-    assert got == epoch_ms("2024-03-15")
+    got = _val_str(tvl_date_add("months", str_def("2024-01-15"), TVLInt.Def(2 * 10 ** 14)))
+    assert got == "2024-03-15T00:00:00.000Z"

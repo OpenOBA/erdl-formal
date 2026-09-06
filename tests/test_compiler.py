@@ -323,17 +323,19 @@ def test_compile_days_between():
 
 
 def test_compile_date_part():
-    s = _int_schema("t")
+    s = _string_schema("t")
     assert is_expr(_compile({"date_part": {"unit": "year", "arg": {"field": "t"}}}, s))
 
 
 def test_compile_month_last_day():
-    s = _int_schema("t")
+    s = _string_schema("t")
     assert is_expr(_compile({"month_last_day": {"field": "t"}}, s))
 
 
 def test_compile_date_add():
-    s = _int_schema("t", "n")
+    s = Schema()
+    s.add(FieldContract(field="t", type="string"))
+    s.add(FieldContract(field="n", type="int"))
     assert is_expr(_compile(
         {"date_add": {"unit": "days", "base": {"field": "t"}, "amount": {"field": "n"}}}, s,
     ))
