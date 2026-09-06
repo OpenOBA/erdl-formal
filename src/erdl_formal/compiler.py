@@ -397,6 +397,12 @@ def _compile_node(expr, ctx):
         return _fold(tvl_or, [_coerce_bool(compile_expr(a, ctx)) for a in val])
     if key == "not":
         return tvl_not(_coerce_bool(compile_expr(val, ctx)))
+    if key == "not_exists":
+        # Simple operator not_exists → not(exists(...)) (SPEC §5.2 lenient alias;
+        # the ONE not_* whose bare form is valid: it senses field absence, no
+        # exists-guard needed). Aligns the verifier's 38-key set with the engine's
+        # s-expression.ts and the SPEC S-expr key set.
+        return tvl_not(_exists(compile_expr(val, ctx)))
 
     if key in _COMPARE_OPS:
         left, right = val[0], val[1]

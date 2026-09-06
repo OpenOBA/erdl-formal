@@ -395,6 +395,15 @@ def test_ne_null_senses_field_presence():
     assert can_fire(expr, s, missing=["name"]) is False
 
 
+def test_not_exists_alias():
+    # not_exists is the ONE Simple not_* whose bare form is valid: it compiles to
+    # not(exists(...)) (SPEC §5.2 lenient alias), aligning the 38-key S-expr set.
+    s = Schema()
+    s.add(FieldContract(field="name", type="string"))
+    assert can_fire({"not_exists": {"field": "name"}}, s, missing=["name"]) is True
+    assert can_fire({"not_exists": {"field": "name"}}, s, premises=["name"]) is False
+
+
 # --- type-error folding (drift 4): verifier folds to false/null, not compile error ---
 #
 # SPEC §7.3(a)/§7.3(e) + §11.2: type-mismatched operands fold at evaluation time
