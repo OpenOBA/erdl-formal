@@ -110,3 +110,17 @@ def test_date_add_years_leap_clamp():
 def test_date_add_unsupported_unit_raises():
     with pytest.raises(NotImplementedError):
         tvl_date_add("seconds", TVLInt.Def(epoch_ms("2026-01-01")), TVLInt.Def(1 * 10 ** 14))
+
+
+def test_date_add_non_integer_amount_folds_missing():
+    """G3 (SPEC §7.3(f)): amount MUST be an integer; a non-integer scale-14 amount folds to Missing."""
+    from erdl_formal.tvl import is_missing_int
+    # 1.5 months = 150000000000000 scale-14 units → not divisible by 10^14 → Missing
+    got = tvl_date_add("months", TVLInt.Def(epoch_ms("2024-01-15")), TVLInt.Def(15 * 10 ** 13))
+    assert is_true(simplify(is_missing_int(got)))
+
+
+def test_date_add_integer_amount_ok():
+    """An integer amount (divisible by 10^14) proceeds normally."""
+    got = _val(tvl_date_add("months", TVLInt.Def(epoch_ms("2024-01-15")), TVLInt.Def(2 * 10 ** 14)))
+    assert got == epoch_ms("2024-03-15")
