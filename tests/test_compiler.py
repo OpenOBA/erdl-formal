@@ -393,3 +393,86 @@ def test_ne_null_senses_field_presence():
     expr = {"ne": [{"field": "name"}, None]}
     assert can_fire(expr, s, premises=["name"]) is True
     assert can_fire(expr, s, missing=["name"]) is False
+
+
+# --- type-error folding (drift 4): verifier folds to false/null, not compile error ---
+#
+# SPEC §7.3(a)/§7.3(e) + §11.2: type-mismatched operands fold at evaluation time
+# (false / null + type_mismatch), never a compile error. The verifier mirrors the
+# engine's runtime fold (toBoolean strict === true, toRational → null → Missing).
+
+
+def test_and_non_bool_operand_folds_false():
+    s = _int_schema("a")
+    # and(int, true) → toBoolean(int) = false → false
+    assert can_fire({"and": [{"field": "a"}, True]}, s, premises=["a"]) is False
+
+
+def test_not_non_bool_operand_folds_true():
+    s = _int_schema("a")
+    # not(int) → toBoolean(int) = false → not(false) = true (always fires)
+    assert can_fire({"not": {"field": "a"}}, s, premises=["a"]) is True
+
+
+def test_in_member_sort_mismatch_folds_false():
+    s = _string_schema("cat")
+    # in(cat, [1, 2]) → member int vs string field → false (§7.3(a))
+    assert can_fire({"in": [{"field": "cat"}, [1, 2]]}, s, premises=["cat"]) is False
+
+
+def test_in_non_array_right_folds_false():
+    s = _string_schema("cat")
+    # in(cat, "not-array") → right operand not an array → false (type_mismatch)
+    assert can_fire({"in": [{"field": "cat"}, "not-array"]}, s, premises=["cat"]) is False
+
+
+def test_contains_non_string_operand_folds_false():
+    s = _int_schema("age")
+    # contains(int_field, "x") → non-string operand → false (§11.2)
+    assert can_fire({"contains": [{"field": "age"}, "x"]}, s, premises=["age"]) is False
+
+
+def test_starts_with_non_string_right_folds_false():
+    s = _string_schema("name")
+    # starts_with(name, 123) → right operand non-string → false
+    assert can_fire({"starts_with": [{"field": "name"}, 123]}, s, premises=["name"]) is False
+
+
+def test_match_redos_folds_false():
+    s = _string_schema("cmd")
+    # match(cmd, "(a+)+") → ReDoS nested quantifier → false (engine regex_re_dos)
+    assert can_fire({"match": [{"field": "cmd"}, "(a+)+$"]}, s, premises=["cmd"]) is False
+
+
+def test_match_non_string_operand_folds_false():
+    s = _int_schema("age")
+    # match(int_field, "x") → non-string operand → false
+    assert can_fire({"match": [{"field": "age"}, "x"]}, s, premises=["age"]) is False
+
+
+def test_quantifier_over_non_array_folds_false():
+    s = _string_schema("items")
+    expr = {"all": {"binding": "x", "over": {"field": "items"}, "predicate": {"gt": [{"var": "x"}, 0]}}}
+    # all over a string (non-array) field → false (§7.3(e))
+    assert can_fire(expr, s) is False
+
+
+def test_quantifier_over_missing_field_folds_false():
+    s = Schema()
+    expr = {"any": {"binding": "x", "over": {"field": "missing"}, "predicate": {"var": "x"}}}
+    # any over a missing (default int) field → false
+    assert can_fire(expr, s) is False
+
+
+def test_aggregate_over_non_array_folds_false():
+    s = _int_schema("nums")
+    # avg(nums) over a scalar int → Missing → gt(Missing, 5) → false
+    expr = {"gt": [{"avg": {"field": "nums"}}, 5]}
+    assert can_fire(expr, s, premises=["nums"]) is False
+
+
+def test_arith_non_numeric_operand_folds_false():
+    s = _int_schema("a")
+    # add(a, "x") → non-numeric operand → Missing → eq(Missing, 1) → false
+    expr = {"eq": [{"add": [{"field": "a"}, "x"]}, 1]}
+    assert can_fire(expr, s, premises=["a"]) is False

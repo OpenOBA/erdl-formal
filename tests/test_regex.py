@@ -234,6 +234,31 @@ def test_reject_mid_pattern_anchor():
             pass
 
 
+def test_reject_redos_nested_quantifier():
+    # (a+)+, (a+)*, (a*)* — nested quantifiers (ReDoS backtracking risk).
+    for p in ["(a+)+", "(a+)*", "(a*)*", "(a+)+$", "([a-z]+)+"]:
+        try:
+            compile_match(p)
+            assert False, f"{p!r} should be rejected as ReDoS"
+        except RegexError:
+            pass
+
+
+def test_reject_redos_adjacent_quantified_atoms():
+    # a*a*, .*.*, \w+\w+ — adjacent identical / wildcard quantified atoms.
+    for p in ["a*a*", ".*.*", r"\w+\w+", "a{1,3}a{1,3}"]:
+        try:
+            compile_match(p)
+            assert False, f"{p!r} should be rejected as ReDoS"
+        except RegexError:
+            pass
+
+
+def test_allow_heterogeneous_adjacent_atoms():
+    # \w+\d+ (heterogeneous adjacency) is allowed — mirrors safe-regex.ts.
+    assert _matches(r"\w+\d+", "abc123") is True
+
+
 # --- compiler integration -----------------------------------------------------
 
 def test_compiler_match_integration():

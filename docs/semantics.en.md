@@ -34,7 +34,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 | `or(a,b)` | `Def(val(a) ∨ val(b))` |
 | `not(a)` | `Def(¬val(a))` |
 
-> **E11 leaf collapse**: logical operators are **two-valued** — their operands are already-collapsed booleans (comparison nodes collapse Missing to false); undefined does not propagate to the boolean layer.
+> **E11 leaf collapse**: logical operators are **two-valued** — their operands are already-collapsed booleans (comparison nodes collapse Missing to false); undefined does not propagate to the boolean layer. Non-boolean operands (int/string/AggVal) collapse to `false` per the engine's `toBoolean` (strict `=== true`) — everything except boolean `true` is false.
 
 ### Comparison (6, E11 collapse)
 
@@ -43,13 +43,15 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 | `eq(a,b)` `ne(a,b)` | `Def(false)` if either operand is Missing; otherwise `Def(val(a) = / ≠ val(b))` |
 | `gt(a,b)` `gte` `lt` `lte` | `Def(false)` if either is Missing; otherwise `Def(val(a) > / ≥ / < / ≤ val(b))` (numeric order / string Unicode code-point order) |
 
+> **Type-mismatch collapse (§7.3(a)/§11.2)**: comparing two operands of different types (e.g. `"100" gt 50`) → `Def(false)`; no implicit conversion.
+
 ### Set (1)
 
-`in(x, S)` = `Def(false)` if `x` is Missing; otherwise `Def(val(x) ∈ S)`.
+`in(x, S)` = `Def(false)` if `x` is Missing or `S` has a member whose type differs from `x` (§7.3(a)); otherwise `Def(val(x) ∈ S)`. Non-array right operand → `Def(false)` (type_mismatch).
 
 ### String (4)
 
-`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = prefix/suffix/contains predicates (Missing → `Def(false)`); `match(s,re)` = safe regex (case-sensitive, ReDoS-protected, step count ≤10000).
+`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = prefix/suffix/contains predicates (Missing → `Def(false)`; any non-string operand → `Def(false)`, §11.2 strict type matching); `match(s,re)` = safe regex (case-sensitive, ReDoS-protected, step count ≤10000; non-string operand or ReDoS/non-regular pattern → `Def(false)`, aligning with the engine's runtime fold).
 
 ### Existence / dimension (3)
 
@@ -61,7 +63,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 
 ### Quantifier (3, E8 empty-array collapse)
 
-`all/any/none(array, pred)`: empty array → `Def(false)` (E8 anti-vacuous-truth); non-empty → `Def(∧/∨/¬∨_{i} pred(array[i]))`.
+`all/any/none(array, pred)`: empty array → `Def(false)` (E8 anti-vacuous-truth); non-empty → `Def(∧/∨/¬∨_{i} pred(array[i]))`. Non-array `over` (scalar/missing) → `Def(false)` (§7.3(e) type_mismatch fold).
 
 ### Arithmetic (5, E2 fixed-point rational)
 
@@ -73,7 +75,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 
 ### Aggregate (1)
 
-`aggregate(fn, over)`: `count/sum` over an empty array → `Some(0)`; `avg/min/max` over an empty array → `None` (folds to false in condition context). Non-array `over` → compile-time `TypeError` (fail-fast).
+`aggregate(fn, over)`: `count/sum` over an empty array → `Some(0)`; `avg/min/max` over an empty array → `None` (folds to false in condition context). Non-array `over` → `None` (type_mismatch fold, aligning with SPEC §7.3(e)).
 
 ## 3. E constraints (semantic layer)
 

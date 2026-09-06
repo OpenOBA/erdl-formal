@@ -29,14 +29,18 @@ call in ``evaluator.ts`` is ``safeRegExp(rn)``, i.e. ``new RegExp(pattern)``):
 
 Rejected (outside the subset): backreferences ``\\1``–``\\9`` / ``\\k<…>``,
 lookahead ``(?=`` ``(?!``, lookbehind ``(?<=`` ``(?<!``, atomic groups ``(?>``,
-conditionals ``(?(``, inline flags, ``\\B``, and ``^``/``$``/``\\b`` in a
-non-anchor position — fail-closed, never silently mis-encoded.
+conditionals ``(?(``, inline flags, ``\\B``, ``^``/``$``/``\\b`` in a
+non-anchor position, and ReDoS-unsafe patterns (nested quantifiers ``(a+)+``,
+adjacent quantified atoms ``a*a*``/``.*.*``) — fail-closed, never silently
+mis-encoded.
 
 Quantifier repeat counts (``{m}`` / ``{m,}`` / ``{m,n}``) are bounded by
 ``MAX_REPEAT`` (10000, aligned with the E4 resource limit): exceeding it raises
 :class:`RegexError`. ``{m,n}`` with ``m > n`` is also rejected (a JS SyntaxError).
 The ``{m,}`` form is encoded lazily as ``(atom^m)·(atom*)`` — no O(m) expansion.
 """
+
+import re as _re
 
 from z3 import (
     AllChar,
@@ -54,6 +58,35 @@ from z3 import (
     StringSort,
     Union,
 )
+
+# ReDoS detection — mirrors the runtime ``safe-regex.ts`` ``analyzePattern``
+# (spec v2.1 §7.3(d) E4): the safe subset rejects nested quantifiers and
+# adjacent quantified atoms, not just non-regular constructs.
+_NESTED_QUANTIFIER = _re.compile(r"\)\s*([+*?]|\{\d)")
+_ADJACENT_QUANTIFIED_ATOMS = _re.compile(
+    r"(\\[wdsWDS]|\[[^\]]*\]|\.|[A-Za-z0-9])([+*]|\{\d+(?:,\d*)?\})"
+    r"(\\[wdsWDS]|\[[^\]]*\]|\.|[A-Za-z0-9])([+*]|\{\d)"
+)
+
+
+def _check_redos(pattern: str):
+    """Static ReDoS scan; returns a rejection reason, or None if safe.
+
+    Mirrors the two backtracking-cost heuristics of ``safe-regex.ts``:
+    (1) a ``)`` followed by a quantifier (nested quantifier, e.g. ``(a+)+``);
+    (2) two adjacent quantified atoms where the atoms are identical or either
+    is the wildcard ``.`` (e.g. ``a*a*``, ``.*.*``).
+    """
+    if _NESTED_QUANTIFIER.search(pattern):
+        return "potential ReDoS pattern rejected: nested quantifiers detected"
+    for m in _ADJACENT_QUANTIFIED_ATOMS.finditer(pattern):
+        atom1, atom2 = m.group(1), m.group(3)
+        if atom1 == atom2 or atom1 == "." or atom2 == ".":
+            return (
+                f"potential ReDoS pattern rejected: adjacent quantified atoms "
+                f"({atom1}\u2026{atom2})"
+            )
+    return None
 
 _RE_SORT = ReSort(StringSort())
 # Universal language: every string (including the empty string).
@@ -217,6 +250,10 @@ class _Parser:
     def compile(self):
         if not isinstance(self.p, str):
             raise RegexError("match pattern must be a string")
+
+        redos = _check_redos(self.p)
+        if redos is not None:
+            raise RegexError(redos)
 
         anchored_start = self._take("^")
         leading_b = self._take("\\b")

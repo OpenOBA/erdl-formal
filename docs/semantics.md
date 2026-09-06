@@ -34,7 +34,7 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 | `or(a,b)` | `Def(val(a) ∨ val(b))` |
 | `not(a)` | `Def(¬val(a))` |
 
-> **E11 叶子折叠**：逻辑算子是**两值**的——其操作数是已折叠的布尔值（比较节点把 Missing 折叠为 false），undefined 不传播到布尔层。
+> **E11 叶子折叠**：逻辑算子是**两值**的——其操作数是已折叠的布尔值（比较节点把 Missing 折叠为 false），undefined 不传播到布尔层。非布尔操作数（int/string/AggVal）按引擎 `toBoolean`（严格 `=== true`）折叠为 `false`——除布尔 `true` 外一律为假。
 
 ### 比较（6，E11 折叠）
 
@@ -43,13 +43,15 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 | `eq(a,b)` `ne(a,b)` | `Def(false)` 若任一操作数 Missing；否则 `Def(val(a) = / ≠ val(b))` |
 | `gt(a,b)` `gte` `lt` `lte` | `Def(false)` 若任一 Missing；否则 `Def(val(a) > / ≥ / < / ≤ val(b))`（数值序 / 字符串 Unicode 码点序）|
 
+> **类型不匹配折叠（§7.3(a)/§11.2）**：比较两操作数类型不一致（如 `"100" gt 50`）→ `Def(false)`，禁止隐式转换。
+
 ### 集合（1）
 
-`in(x, S)` = `Def(false)` 若 `x` Missing；否则 `Def(val(x) ∈ S)`。
+`in(x, S)` = `Def(false)` 若 `x` Missing 或 `S` 成员类型与 `x` 不一致（§7.3(a)）；否则 `Def(val(x) ∈ S)`。右操作数非数组 → `Def(false)`（type_mismatch）。
 
 ### 字符串（4）
 
-`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = 前缀/后缀/包含判定（Missing → `Def(false)`）；`match(s,re)` = 安全正则（大小写敏感，ReDoS 防护，步数 ≤10000）。
+`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = 前缀/后缀/包含判定（Missing → `Def(false)`；任一操作数非字符串 → `Def(false)`，§11.2 严格类型匹配）；`match(s,re)` = 安全正则（大小写敏感，ReDoS 防护，步数 ≤10000；非字符串操作数或 ReDoS/非正则模式 → `Def(false)`，对齐引擎运行时折叠）。
 
 ### 存在/量纲（3）
 
@@ -61,7 +63,7 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 
 ### 量词（3，E8 空数组折叠）
 
-`all/any/none(array, pred)`：空数组 → `Def(false)`（E8 反空洞真）；非空 → `Def(∧/∨/¬∨_{i} pred(array[i]))`。
+`all/any/none(array, pred)`：空数组 → `Def(false)`（E8 反空洞真）；非空 → `Def(∧/∨/¬∨_{i} pred(array[i]))`。`over` 非数组（标量/缺失）→ `Def(false)`（§7.3(e) type_mismatch 折叠）。
 
 ### 算术（5，E2 定点有理数）
 
@@ -73,7 +75,7 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 
 ### 聚合（1）
 
-`aggregate(fn, over)`：`count/sum` 空数组 → `Some(0)`；`avg/min/max` 空数组 → `None`（条件上下文折叠 false）。非数组 over → 编译期 `TypeError`（fail-fast）。
+`aggregate(fn, over)`：`count/sum` 空数组 → `Some(0)`；`avg/min/max` 空数组 → `None`（条件上下文折叠 false）。非数组 over → `None`（type_mismatch 折叠，对齐 SPEC §7.3(e)）。
 
 ## 3. E 约束（语义层）
 

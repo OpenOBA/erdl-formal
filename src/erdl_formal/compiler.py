@@ -108,6 +108,7 @@ from .tvl import (
 )
 
 from .calendar import tvl_date_add, tvl_date_part, tvl_epoch_ms, tvl_month_last_day
+from .regex import RegexError
 
 _COMPARE_OPS = ["eq", "ne", "gt", "gte", "lt", "lte"]
 _STRING_OPS = ["contains", "match", "starts_with", "ends_with"]
@@ -238,6 +239,12 @@ def _array_path(over):
     )
 
 
+def _is_array_field(ctx, path):
+    """True iff ``path`` is contracted as an array field (not scalar / missing)."""
+    c = ctx.schema.get(path)
+    return c is not None and c.type == "array"
+
+
 def _fold(fn, args):
     acc = args[0]
     for a in args[1:]:
@@ -246,13 +253,35 @@ def _fold(fn, args):
 
 
 def _coerce_bool(x):
-    """Coerce an operand to a boolean TVL. AggVal → Def(False) (toBoolean strict === true)."""
-    return agg_bool(x) if x.sort() == AggVal else x
+    """Coerce an operand to a boolean TVL via toBoolean (strict ``=== true``).
+
+    - TVLBool → x (already boolean);
+    - AggVal → agg_bool(x) (empty array == false, num == numeric);
+    - TVLInt / TVLStr → Def(False) (no non-bool value is ``=== true``).
+    """
+    s = x.sort()
+    if s == TVLBool:
+        return x
+    if s == AggVal:
+        return agg_bool(x)
+    # int / string operands are never === true (SPEC §11.2 no implicit conversion).
+    return TVLBool.Def(False)
 
 
 def _coerce_int(x):
-    """Coerce an operand to an int TVL. AggVal empty → Missing (type mismatch); num → Def(v)."""
-    return agg_to_int(x) if x.sort() == AggVal else x
+    """Coerce an operand to an int TVL.
+
+    - TVLInt → x;
+    - AggVal → agg_to_int(x) (empty → Missing, num → Def(v));
+    - TVLStr / TVLBool → Missing (engine toRational → null → EvalError).
+    """
+    s = x.sort()
+    if s == TVLInt:
+        return x
+    if s == AggVal:
+        return agg_to_int(x)
+    # non-numeric (string / bool) → Missing (E12 EvalError approximation).
+    return TVLInt.Missing
 
 
 _EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
@@ -324,10 +353,14 @@ def _exists(x):
 
 
 def _in(x, members):
-    """Type-dispatched set membership (int / string / bool)."""
+    """Type-dispatched set membership (int / string / bool).
+
+    A member whose sort differs from the field is a type-mismatched comparison
+    (SPEC §7.3(a)) → Def(False), not a compile error.
+    """
     s = x.sort()
     if members and any(m.sort() != s for m in members):
-        raise TypeError(f"in: member sort mismatch (field {s} vs member)")
+        return TVLBool.Def(False)
     if s == TVLInt:
         return tvl_in(x, members)
     if s == TVLStr:
@@ -388,19 +421,34 @@ def _compile_node(expr, ctx):
         return _cmp_order(key, compile_expr(left, ctx), compile_expr(right, ctx))
 
     if key == "in":
-        x = _coerce_int(compile_expr(val[0], ctx))
-        members = [_coerce_int(compile_expr(m, ctx)) for m in val[1]]
+        if not isinstance(val[1], list):
+            # right operand is not an array → false (engine type_mismatch).
+            return TVLBool.Def(False)
+        x = compile_expr(val[0], ctx)
+        members = [compile_expr(m, ctx) for m in val[1]]
         return _in(x, members)
 
     if key in _STRING_OPS:
+        left = compile_expr(val[0], ctx)
         if key == "match":
-            return tvl_match(compile_expr(val[0], ctx), val[1])
+            # match: left non-string → false; ReDoS / non-regular pattern → false
+            # (engine folds both via safeRegExp catch + regex_re_dos warning).
+            if left.sort() != TVLStr or not isinstance(val[1], str):
+                return TVLBool.Def(False)
+            try:
+                return tvl_match(left, val[1])
+            except RegexError:
+                return TVLBool.Def(False)
+        right = compile_expr(val[1], ctx)
+        if left.sort() != TVLStr or right.sort() != TVLStr:
+            # non-string operand → false (strict type matching §5.2/§11.2).
+            return TVLBool.Def(False)
         fn = {
             "contains": tvl_contains,
             "starts_with": tvl_starts_with,
             "ends_with": tvl_ends_with,
         }[key]
-        return fn(compile_expr(val[0], ctx), compile_expr(val[1], ctx))
+        return fn(left, right)
 
     if key == "exists":
         return _exists(compile_expr(val, ctx))
@@ -453,11 +501,16 @@ def _quantifier(kind, q, ctx):
     Binds ``binding`` to each of the ``cardinality`` raw-τ elements and compiles
     the predicate with that binding; only indices ``i < len`` participate (the
     guard is applied inside ``tvl_all/any/none`` via the length variable).
+
+    ``over`` a non-array (scalar / missing) field → Def(False) (SPEC §7.3(e)
+    type_mismatch, folded — the engine folds the same way).
     """
     binding = str(q["binding"])
     over = q["over"]
     predicate = q["predicate"]
     arr_path = _array_path(over)
+    if not _is_array_field(ctx, arr_path):
+        return TVLBool.Def(False)
     length = ctx.array_len(arr_path)
     elems = ctx.array_elements(arr_path)
     c = ctx.schema.get(arr_path)
@@ -474,8 +527,14 @@ def _quantifier(kind, q, ctx):
 
 
 def _aggregate(fn, over, ctx):
-    """Compile an aggregate {count|sum|avg|min|max: over} over a length-variable array."""
+    """Compile an aggregate {count|sum|avg|min|max: over} over a length-variable array.
+
+    ``over`` a non-array field → Missing (SPEC §7.3(e): null + type_mismatch,
+    folded).
+    """
     arr_path = _array_path(over)
+    if not _is_array_field(ctx, arr_path):
+        return TVLInt.Missing
     length = ctx.array_len(arr_path)
     elems = ctx.array_elements(arr_path)
     return tvl_aggregate(fn, length, elems)
