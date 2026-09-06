@@ -27,8 +27,8 @@ sat / unsat + counterexample → replayed against the real engine (replay/)
 | `field_contracts.py` | Verification schema (field type / cardinality) | — |
 | `compiler.py` | S-expression → Z3 TVL compiler | tvl, quantifiers, calendar, field_contracts |
 | `properties.py` | Property verification (satisfiability + counterexamples) | compiler |
-| `resolution.py` | Rule-resolution reference model (§9) | — |
-| `resolution_smt.py` | Resolution-layer SMT proofs (§9 three properties) | z3 |
+| `resolution.py` | Rule-resolution reference model (§7.1) | — |
+| `resolution_smt.py` | Resolution-layer SMT proofs (§7.1 five properties) | z3 |
 
 **Dependency direction**: `compiler` → `tvl/quantifiers/calendar/field_contracts`; `properties` → `compiler`; `resolution` / `resolution_smt` are standalone.
 
@@ -124,8 +124,8 @@ def disjoint(a_expr, b_expr, schema):
 | field_contracts | `FieldContract/Schema` | Verification schema |
 | compiler | `CompileContext/compile_expr` | S-expression → Z3 |
 | properties | `can_fire/always_denies/subsumes/equivalent/disjoint` | Property verification |
-| resolution | `resolve` | Resolution (§9 ring/override/emergency) |
-| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/emergency_shortcut` | Resolution-layer SMT proofs |
+| resolution | `resolve` | Resolution (§7.1 ring/override/catch-all) |
+| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/catch_all_inert_when_explicit/emergency_shortcut/workflow_shortcut` | Resolution-layer SMT proofs |
 
 ---
 
@@ -153,7 +153,7 @@ for v in vectors:
 
 - One `test_*.py` per module, covering "normal / boundary / Missing / exception".
 - Cross-checks live in `replay/` (not `tests/`, because they depend on erdl-vectors frozen vectors).
-- Run everything: `python -m pytest -q` (currently 130 passing).
+- Run everything: `python -m pytest -q` (currently 249 passing).
 
 ---
 

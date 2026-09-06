@@ -14,11 +14,10 @@
 
 """Property verification: satisfiability + counterexample.
 
-Properties: always-denies, subsumption, equivalence, disjointness + ERDL-specific
-override-soundness / ring-respect / emergency-shortcut / workflow-shortcut /
-catch-all-inert-when-explicit. The supported subset provides the canonical
-satisfiability check `can_fire`, from which the expression-layer properties are
-derived.
+Expression-layer properties: can_fire, always_denies, subsumes, equivalent,
+disjoint. (Resolution-layer properties — override_soundness, ring_respect,
+catch_all_inert_when_explicit, emergency_shortcut, workflow_shortcut — live in
+`resolution_smt.py`.)
 """
 
 from z3 import Not, Solver, sat

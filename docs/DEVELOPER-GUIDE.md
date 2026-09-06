@@ -27,8 +27,8 @@ sat / unsat + 反例 → 回放真实引擎交叉验证（replay/）
 | `field_contracts.py` | 验证 schema（字段类型/基数）| — |
 | `compiler.py` | S-expression → Z3 TVL 编译器 | tvl, quantifiers, calendar, field_contracts |
 | `properties.py` | 性质验证（可满足性 + 反例）| compiler |
-| `resolution.py` | 规则裁决参考模型（§9）| — |
-| `resolution_smt.py` | 裁决层 SMT 全量证明（§9 三条性质）| z3 |
+| `resolution.py` | 规则裁决参考模型（§7.1）| — |
+| `resolution_smt.py` | 裁决层 SMT 全量证明（§7.1 五条性质）| z3 |
 
 **依赖方向**：`compiler` → `tvl/quantifiers/calendar/field_contracts`；`properties` → `compiler`；`resolution` / `resolution_smt` 独立。
 
@@ -124,8 +124,8 @@ def disjoint(a_expr, b_expr, schema):
 | field_contracts | `FieldContract/Schema` | 验证 schema |
 | compiler | `CompileContext/compile_expr` | S-expression → Z3 |
 | properties | `can_fire/always_denies/subsumes/equivalent/disjoint` | 性质验证 |
-| resolution | `resolve` | 裁决（§9 ring/override/emergency）|
-| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/emergency_shortcut` | 裁决层 SMT 全量证明 |
+| resolution | `resolve` | 裁决（§7.1 ring/override/catch-all）|
+| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/catch_all_inert_when_explicit/emergency_shortcut/workflow_shortcut` | 裁决层 SMT 全量证明 |
 
 ---
 
@@ -153,7 +153,7 @@ for v in vectors:
 
 - 每个模块一个 `test_*.py`，覆盖「正常 / 边界 / Missing / 异常」。
 - 交叉验证放 `replay/`（不是 `tests/`，因依赖 erdl-vectors 冻结向量）。
-- 跑全量：`python -m pytest -q`（当前 130 全绿）。
+- 跑全量：`python -m pytest -q`（当前 249 全绿）。
 
 ---
 
