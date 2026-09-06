@@ -71,8 +71,14 @@ def val_str(x):
 
 
 def str_def(s):
-    """Wrap a Python str into a TVLStr.Def (Z3 5.x does not auto-coerce str)."""
-    return TVLStr.Def(StringVal(s))
+    """Wrap a Python str into a TVLStr.Def (Z3 5.x does not auto-coerce str).
+
+    NFC-normalized (E10): the engine normalizes string literals to NFC, so the
+    verifier must too — otherwise a decomposed "e + U+0301" literal would not
+    equal the precomposed "é" that the engine produces.
+    """
+    import unicodedata
+    return TVLStr.Def(StringVal(unicodedata.normalize("NFC", s)))
 
 
 def is_missing_int(x):

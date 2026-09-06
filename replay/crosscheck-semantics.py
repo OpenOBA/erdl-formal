@@ -13,7 +13,7 @@ the frozen expected value/type.
 import json
 import os
 
-from z3 import Not, Solver, sat
+from z3 import Not, Solver, StringVal, sat
 
 from erdl_formal.compiler import CompileContext, compile_expr
 from erdl_formal.field_contracts import FieldContract, Schema
@@ -26,6 +26,7 @@ from erdl_formal.tvl import (
     agg_to_int,
     val_bool,
     val_int,
+    val_str,
     is_missing_int,
     is_missing_str,
     is_missing_bool,
@@ -151,6 +152,25 @@ def eval_against(expr_tree, context, expected, node=""):
             solver.add(val_bool(expr))
             return "unsat" if solver.check() != sat else "sat"
         return None
+    if vt == "undefined":
+        # missing field/var → Missing
+        if expr.sort() == TVLInt:
+            solver.add(is_missing_int(expr))
+            return "sat" if solver.check() == sat else "unsat"
+        if expr.sort() == TVLStr:
+            solver.add(is_missing_str(expr))
+            return "sat" if solver.check() == sat else "unsat"
+        if expr.sort() == TVLBool:
+            solver.add(is_missing_bool(expr))
+            return "sat" if solver.check() == sat else "unsat"
+        return None
+    if vt == "string":
+        # value == expected string (NFC literal / scalar string field)
+        if expr.sort() == TVLStr:
+            solver.add(Not(is_missing_str(expr)))
+            solver.add(val_str(expr) == StringVal(expected["value"]))
+            return "sat" if solver.check() == sat else "unsat"
+        return None
     if vt in ("rational", "number"):
         if expr.sort() == AggVal:
             expr = agg_to_int(expr)
@@ -189,7 +209,7 @@ def main():
     with open(answers_path, encoding="utf-8") as f:
         answers = json.load(f)
 
-    stats = {"boolean": [0, 0], "null": [0, 0], "rational": [0, 0], "number": [0, 0]}
+    stats = {"boolean": [0, 0], "null": [0, 0], "rational": [0, 0], "number": [0, 0], "undefined": [0, 0], "string": [0, 0]}
     fails = []
     skipped = 0
     for v in vectors:
@@ -199,7 +219,7 @@ def main():
         if not exp or exp.get("errored"):
             continue
         vt = exp.get("value_type")
-        if vt not in ("boolean", "null", "rational", "number"):
+        if vt not in ("boolean", "null", "rational", "number", "undefined", "string"):
             skipped += 1
             continue
         try:
@@ -215,6 +235,10 @@ def main():
             want = "sat" if exp["value"] is True else "unsat"
         elif vt == "null":
             want = "unsat"
+        elif vt == "undefined":
+            want = "sat"
+        elif vt == "string":
+            want = "sat"
         else:  # rational/number
             want = "sat"
         if got == want:
@@ -223,7 +247,7 @@ def main():
             stats[vt][1] += 1
             fails.append((v["id"], vt, want, got))
 
-    for vt in ("boolean", "null", "rational", "number"):
+    for vt in ("boolean", "null", "rational", "number", "undefined", "string"):
         p, f_ = stats[vt]
         print(f"  {vt}: {p} consistent, {f_} mismatch")
     print(f"  skipped: {skipped}")
