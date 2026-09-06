@@ -96,20 +96,67 @@ def test_emergency_halt_non_root_ring_breaks():
     assert resolve(rules) == "EMERGENCY_HALT"
 
 
-def test_request_human_accumulates():
-    # non-ALLOW/DENY/HALT decision accumulates when nothing set yet
-    rules = [_r("human", "REQUEST_HUMAN", 10, ring=0)]
-    assert resolve(rules) == "REQUEST_HUMAN"
+def test_rollback_tightens_allow():
+    # P2: ROLLBACK is a restrictive (blocking) decision and must tighten an ALLOW.
+    rules = [
+        _r("base-allow", "ALLOW", 10, ring=0),
+        _r("rollback", "ROLLBACK", 20, ring=1),
+    ]
+    assert resolve(rules) == "ROLLBACK"
 
 
-def test_catch_all_deny_never_overrides_allow():
-    # v1.3: a catch-all (empty-condition) DENY never overrides an explicit
-    # ALLOW, even at a higher ring.
+def test_quarantine_tightens_allow():
+    # P2: QUARANTINE is a restrictive (blocking) decision and must tighten an ALLOW.
+    rules = [
+        _r("base-allow", "ALLOW", 10, ring=0),
+        _r("quarantine", "QUARANTINE", 20, ring=1),
+    ]
+    assert resolve(rules) == "QUARANTINE"
+
+
+def test_workflow_short_circuits():
+    # P2: WORKFLOW short-circuits into its state machine on hit.
+    rules = [
+        _r("workflow", "WORKFLOW", 10, ring=0),
+        _r("later-deny", "DENY", 20, ring=1),
+    ]
+    assert resolve(rules) == "WORKFLOW"
+
+
+def test_override_allow_relaxes_rollback():
+    # override ALLOW relaxes a restrictive decision (DENY/ROLLBACK/QUARANTINE) → ALLOW.
+    rules = [
+        _r("base-rollback", "ROLLBACK", 10, ring=0),
+        _r("exception-allow", "ALLOW", 20, ring=3, override="critical"),
+    ]
+    assert resolve(rules) == "ALLOW"
+
+
+def test_delegate_defer_guide_accumulate():
+    # advisory / human-flow decisions accumulate only when nothing is set yet.
+    for d in ("DELEGATE", "DEFER", "GUIDE"):
+        assert resolve([_r("x", d, 10, ring=0)]) == d
+
+
+def test_catch_all_inert_when_explicit_present():
+    # §7.1 item 6 (global): a catch-all (empty-condition) DENY never overrides
+    # an explicit ALLOW, even at a higher ring.
     rules = [
         _r("explicit-allow", "ALLOW", 10, ring=0),
         _r("catchall-deny", "DENY", 20, ring=3, catch_all=True),
     ]
     assert resolve(rules) == "ALLOW"
+
+
+def test_catch_all_global_not_ring_local():
+    # P1: a catch-all in ring 0 MUST NOT preempt an explicit rule in ring 3.
+    # (the earlier per-ring "catch-all sorts last" reading returned ALLOW here;
+    # the global fallback semantics returns CORRECT.)
+    rules = [
+        _r("catchall-allow", "ALLOW", 1, ring=0, catch_all=True),
+        _r("explicit-correct", "CORRECT", 1, ring=3),
+    ]
+    assert resolve(rules) == "CORRECT"
 
 
 def test_catch_all_allow_never_overrides_deny():

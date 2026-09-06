@@ -37,21 +37,28 @@ from erdl_formal import resolution
 from erdl_formal.resolution_smt import (
     ALLOW,
     CORRECT,
+    DEFER,
+    DELEGATE,
     DENY,
     EMERGENCY_HALT,
     ESCALATE,
+    GUIDE,
     NOTIFY,
     OVR_CRITICAL,
     OVR_HIGH,
     OVR_LOW,
     OVR_NONE,
     OVR_NORMAL,
+    QUARANTINE,
     REQUEST_HUMAN,
+    ROLLBACK,
     ResolutionFold,
-    catch_all_neutral,
+    WORKFLOW,
+    catch_all_inert_when_explicit,
     emergency_shortcut,
     override_soundness,
     ring_respect,
+    workflow_shortcut,
 )
 
 _DEC = {
@@ -62,6 +69,12 @@ _DEC = {
     "REQUEST_HUMAN": REQUEST_HUMAN,
     "ESCALATE": ESCALATE,
     "NOTIFY": NOTIFY,
+    "DELEGATE": DELEGATE,
+    "DEFER": DEFER,
+    "ROLLBACK": ROLLBACK,
+    "QUARANTINE": QUARANTINE,
+    "WORKFLOW": WORKFLOW,
+    "GUIDE": GUIDE,
 }
 _OVR = {
     "critical": OVR_CRITICAL,
@@ -86,8 +99,12 @@ def _sort_key(r):
 # --- pure-Python mirror of the fold's decision table (input pre-sorted) ---
 
 
+_BLOCKING = ("DENY", "ROLLBACK", "QUARANTINE")
+
+
 def _fold_sorted_py(rules):
     """Mirror of the Z3 fold, over an already-sorted rule list."""
+    has_explicit = any(not r.get("catch_all") for r in rules)
     final = None
     fring = None
     skip = None
@@ -97,33 +114,31 @@ def _fold_sorted_py(rules):
         if skip is not None and ring == skip:
             continue
         skip = None
+        # §7.1 item 6 (global): catch-all inert when any explicit rule matched
+        if r.get("catch_all") and has_explicit:
+            continue
+        if d == "WORKFLOW":
+            return "WORKFLOW"
+        if d == "EMERGENCY_HALT":
+            return "EMERGENCY_HALT"
         if final is not None:
-            is_term = d in ("DENY", "EMERGENCY_HALT")
+            is_term = d in _BLOCKING
             is_acc = d == "ALLOW" and final == "ALLOW"
             if not enables and not is_term and not is_acc:
                 continue
         if d == "ALLOW":
-            # §7.1 item 6: catch-all ALLOW never overrides an already-set decision
-            if r.get("catch_all") and final is not None:
-                continue
-            if enables and final == "DENY":
+            if enables and final in _BLOCKING:
                 final, fring = "ALLOW", ring
                 skip = ring
             elif final is None:
                 final, fring = "ALLOW", ring
             continue
-        if d == "EMERGENCY_HALT":
-            final, fring = "EMERGENCY_HALT", ring
-            skip = ring
-            continue
-        if d == "DENY":
-            if r.get("catch_all") and final == "ALLOW":
-                continue  # catch-all DENY never overrides an explicit ALLOW
-            if final is None or final == "DENY":
-                final, fring = "DENY", ring
+        if d in _BLOCKING:
+            if final is None or final in _BLOCKING:
+                final, fring = d, ring
             elif final == "ALLOW":
                 if ring > fring or (ring == fring and not enables):
-                    final, fring = "DENY", ring
+                    final, fring = d, ring
             continue
         if final is None:
             final, fring = d, ring
@@ -240,10 +255,16 @@ def test_emergency_shortcut_holds():
         assert holds, f"emergency-shortcut violated at n={n}: {model}"
 
 
-def test_catch_all_neutral_holds():
+def test_catch_all_inert_when_explicit_holds():
     for n in (2, 3, 4):
-        holds, model = catch_all_neutral(n)
-        assert holds, f"catch-all-neutral violated at n={n}: {model}"
+        holds, model = catch_all_inert_when_explicit(n)
+        assert holds, f"catch-all-inert-when-explicit violated at n={n}: {model}"
+
+
+def test_workflow_shortcut_holds():
+    for n in (2, 3, 4):
+        holds, model = workflow_shortcut(n)
+        assert holds, f"workflow-shortcut violated at n={n}: {model}"
 
 
 # --- non-vacuity: each property's antecedent is reachable ----------------
@@ -282,24 +303,37 @@ def test_ring_respect_antecedent_reachable():
 
 
 def test_emergency_shortcut_antecedent_reachable():
-    # EMERGENCY_HALT is both hittable and a reachable accumulated state.
+    # EMERGENCY_HALT is hittable (the property is non-vacuous).
+    # The "terminal" half is now structural: EMERGENCY_HALT full short-circuits
+    # (sets `done`), so a later rule can never even reach `final_before ==
+    # EMERGENCY_HALT` — that state is unreachable by construction.
     hit = _antecedent_sat(
         1,
-        lambda st: st["effective"] & (st["dec"] == EMERGENCY_HALT),
+        lambda st: st["term_hit"] & (st["dec"] == EMERGENCY_HALT),
     )
     assert hit
-    terminal = _antecedent_sat(
+    # and a later rule genuinely CANNOT see an already-set EMERGENCY_HALT:
+    terminal_unreachable = not _antecedent_sat(
         2,
-        lambda st: st["effective"] & st["has_before"] & (st["final_before"] == EMERGENCY_HALT),
+        lambda st: st["term_hit"] & st["has_before"] & (st["final_before"] == EMERGENCY_HALT),
     )
-    assert terminal
+    assert terminal_unreachable
 
 
-def test_catch_all_neutral_antecedent_reachable():
-    # A catch-all rule genuinely reaches an already-decided state (in both
-    # directions), so the property is non-vacuous.
+def test_catch_all_inert_when_explicit_antecedent_reachable():
+    # A catch-all rule genuinely takes effect when NO explicit rule is present
+    # (so the inert-when-explicit property is non-vacuous in the reachable
+    # direction: catch-all rules do fire in an all-catch-all matched set).
     reachable = _antecedent_sat(
         2,
-        lambda st: st["effective"] & st["has_before"] & st["catch_all"],
+        lambda st: st["effective"] & st["catch_all"],
+    )
+    assert reachable
+
+
+def test_workflow_shortcut_antecedent_reachable():
+    reachable = _antecedent_sat(
+        1,
+        lambda st: st["term_hit"] & (st["dec"] == WORKFLOW),
     )
     assert reachable
