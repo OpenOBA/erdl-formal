@@ -1,6 +1,8 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.18-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v0.1.18-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+
+> ⚠️ **概念验证（Proof of Concept）** —— 本项目处于早期 alpha 阶段，尚未达到生产就绪，请勿用于生产环境。
 
 ERDL 表达内核的形式化验证器 —— 用 Z3 证明规则在所有输入下的安全性
 
@@ -179,6 +181,10 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 - `SECURITY.md` — 漏洞私下报，不开公开 issue
 - `CHANGELOG.zh-CN.md` — 变更记录（Keep a Changelog，中文；英文版见 `CHANGELOG.md`）
 - `CODE_OF_CONDUCT.md` / `style_guide.md`
+
+## 联系方式
+
+- **支持**：[support@openoba.com](mailto:support@openoba.com)
 
 ## 许可证
 
