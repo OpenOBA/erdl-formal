@@ -96,7 +96,7 @@ def override_rank(ovr):
         If(ovr == OVR_LOW, 3, 4))))
 
 
-def is_blocking(dec):
+def is_restrictive(dec):
     """Restrictive-polarity decisions: DENY + its action variants ROLLBACK / QUARANTINE."""
     return Or(dec == DENY, dec == ROLLBACK, dec == QUARANTINE)
 
@@ -192,7 +192,7 @@ class ResolutionFold:
         for i in range(self.n):
             dec, ring, ovr, catch_all = self.dec[i], self.ring[i], self.ovr[i], self.catch_all[i]
             enables = override_enables(ovr)
-            blocking = is_blocking(dec)
+            blocking = is_restrictive(dec)
 
             # A prior `break` skips every remaining rule of the SAME ring; the
             # skip clears once the (sorted) array moves to a higher ring.
@@ -217,9 +217,9 @@ class ResolutionFold:
             )
             effective = And(Not(done), process, Not(terminate), gate_pass, catch_all_ok)
 
-            allow_relax = And(dec == ALLOW, enables, has, is_blocking(fin))
+            allow_relax = And(dec == ALLOW, enables, has, is_restrictive(fin))
             allow_init = And(dec == ALLOW, Not(has))
-            blocking_set = And(blocking, Or(Not(has), is_blocking(fin)))
+            blocking_set = And(blocking, Or(Not(has), is_restrictive(fin)))
             blocking_tighten = And(
                 blocking, has, fin == ALLOW,
                 Or(ring > fring, And(ring == fring, Not(enables))),

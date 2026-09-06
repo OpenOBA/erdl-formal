@@ -47,7 +47,7 @@ _OVERRIDE_RANK = {"critical": 0, "high": 1, "normal": 2, "low": 3}
 # handled separately; WORKFLOW short-circuits into its state machine.
 # Consolidated 2026-09-06 — previously only DENY/EMERGENCY_HALT were terminating;
 # ROLLBACK/QUARANTINE fell into soft-accumulate and could never override ALLOW (P2).
-BLOCKING_DECISIONS = ("DENY", "ROLLBACK", "QUARANTINE")
+RESTRICTIVE_DECISIONS = ("DENY", "ROLLBACK", "QUARANTINE")
 
 
 def override_enables(rule):
@@ -99,7 +99,7 @@ def resolve(rules):
 
             # Sec. 7.1 gate: non-override non-terminating rules can't change a decision
             if final is not None:
-                is_terminating = d in BLOCKING_DECISIONS
+                is_terminating = d in RESTRICTIVE_DECISIONS
                 is_allow_accum = d == "ALLOW" and final == "ALLOW"
                 if not override_enables(r) and not is_terminating and not is_allow_accum:
                     continue
@@ -107,17 +107,17 @@ def resolve(rules):
             if d == "ALLOW":
                 # override ALLOW covers a prior restrictive decision -> ALLOW
                 # (safe relax, cross-ring).
-                if override_enables(r) and final in BLOCKING_DECISIONS:
+                if override_enables(r) and final in RESTRICTIVE_DECISIONS:
                     final, final_ring = "ALLOW", ring
                     break  # override takes effect, stop evaluating this ring
                 if final is None:
                     final, final_ring = "ALLOW", ring
                 continue
 
-            if d in BLOCKING_DECISIONS:
+            if d in RESTRICTIVE_DECISIONS:
                 # A restrictive decision (DENY/ROLLBACK/QUARANTINE) tightens an
                 # ALLOW; among restrictive decisions the ring-major last one wins.
-                if final is None or final in BLOCKING_DECISIONS:
+                if final is None or final in RESTRICTIVE_DECISIONS:
                     final, final_ring = d, ring
                 elif final == "ALLOW":
                     if ring > final_ring or (ring == final_ring and not override_enables(r)):
