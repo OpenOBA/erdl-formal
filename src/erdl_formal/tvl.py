@@ -297,6 +297,20 @@ def tvl_sub(a, b):
     return _arith_binary(a, b, lambda x, y: x - y)
 
 
+# --- aggregate result union (SPEC §7.3(e)) ----------------------------------
+
+# count/sum are always numeric (empty → 0). avg/min/max fold to *boolean false*
+# on an empty array (a first-class value, NOT a Missing — `exists(avg([]))` is
+# true, `not(avg([]))` is true, `avg([]) == false` is true). A tagged union.
+AggVal = Datatype("AggVal")
+AggVal.declare("num", ("n", IntSort()))
+AggVal.declare("empty")
+AggVal = AggVal.create()
+
+agg_num = AggVal.n
+agg_is_empty = AggVal.is_empty
+
+
 # --- aggregate (count/sum/avg/min/max over a length-variable array) ---
 
 def _guarded_sum(elements, length):
@@ -328,29 +342,97 @@ def tvl_aggregate(fn, length, elements):
     `length` is a Z3 Int free variable; `elements` are `cardinality` raw-τ element
     variables (raw τ, not TVL). Only elements with index < length participate.
 
-    count(empty)=0 · sum(empty)=0 — natural identities.
-    avg/min/max(empty) → Missing (E11 leaf-collapse folds every comparison false),
-    per SPEC §7.3(e) safe-failure folding (avoids div-by-zero / ±∞).
+    Returns an :data:`AggVal` tagged union:
+      - count/sum → ``num(0)`` on empty (natural identities), else ``num(value)``
+      - avg/min/max → ``empty`` on empty array (the boolean-false safe fold,
+        SPEC §7.3(e)), else ``num(value)``
     """
     n = len(elements)
     if fn == "count":
-        return TVLInt.Def(length)
+        return AggVal.num(length)
     if fn == "sum":
-        return TVLInt.Def(_guarded_sum(elements, length))
+        return AggVal.num(_guarded_sum(elements, length))
     if fn == "avg":
         s = _guarded_sum(elements, length)
         # round_half_even(sum / length) — length >= 1 (guarded), scale-14 fixed point
-        return If(length == 0, TVLInt.Missing,
-                  TVLInt.Def(_round_half_even_div_signed(s, length)))
+        return If(length == 0, AggVal.empty,
+                  AggVal.num(_round_half_even_div_signed(s, length)))
     if fn == "min":
         if n == 0:
-            return TVLInt.Missing
-        return If(length == 0, TVLInt.Missing, TVLInt.Def(_fold_min(elements, length)))
+            return AggVal.empty
+        return If(length == 0, AggVal.empty, AggVal.num(_fold_min(elements, length)))
     if fn == "max":
         if n == 0:
-            return TVLInt.Missing
-        return If(length == 0, TVLInt.Missing, TVLInt.Def(_fold_max(elements, length)))
+            return AggVal.empty
+        return If(length == 0, AggVal.empty, AggVal.num(_fold_max(elements, length)))
     raise NotImplementedError(f"aggregate {fn!r} not supported")
+
+
+# --- AggVal consumption (empty == boolean-false fold, SPEC §7.3(e)) --------
+
+# An AggVal is either num(v) (a numeric result) or empty (the boolean-false safe
+# fold for avg/min/max over an empty array). Consumption depends on context:
+#
+#   boolean context (toBoolean = strict `=== true`): empty(false) and num(v) are
+#     both !== true → **False**. So `not(avg(x))` is always True, `and(avg(x), y)`
+#     is always False, `or(avg(x), y)` = toBoolean(y).
+#   existence context (exists = non-null/undefined): both empty(false) and num(v)
+#     are present → **True**.
+#   numeric context (compare vs int / arithmetic / in / between): empty(false)
+#     is a type mismatch → folds to Missing (arith) or False (compare / in / between).
+
+
+def agg_bool(agg):
+    """AggVal in a boolean context → always Def(False)."""
+    return TVLBool.Def(False)
+
+
+def agg_exists(agg):
+    """exists(aggregate) → always Def(True) (both empty-false and num are present)."""
+    return TVLBool.Def(True)
+
+
+def agg_to_int(agg):
+    """AggVal in a numeric context → TVLInt. empty → Missing (type mismatch); num(v) → Def(v)."""
+    return If(agg_is_empty(agg), TVLInt.Missing, TVLInt.Def(agg_num(agg)))
+
+
+def _agg_cmp_num(op, agg, n_tvl, n_missing, n_val):
+    """Compare AggVal against an int operand n. empty → False (type mismatch)."""
+    if op == "eq":
+        return TVLBool.Def(If(Or(agg_is_empty(agg), n_missing), False, agg_num(agg) == n_val))
+    if op == "ne":
+        return TVLBool.Def(If(Or(agg_is_empty(agg), n_missing), False, agg_num(agg) != n_val))
+    return TVLBool.Def(
+        If(
+            Or(agg_is_empty(agg), n_missing),
+            False,
+            _RAW_ORDER[op](agg_num(agg), n_val),
+        )
+    )
+
+
+def _agg_cmp_bool(op, agg, b_tvl):
+    """Compare AggVal against a boolean operand b.
+
+    empty (== false) vs b: eq → Not(b), ne → b. num(v) vs b: type mismatch → False.
+    """
+    b_missing = is_missing_bool(b_tvl)
+    b = val_bool(b_tvl)
+    if op == "eq":
+        return TVLBool.Def(If(Or(b_missing, Not(agg_is_empty(agg))), False, Not(b)))
+    if op == "ne":
+        return TVLBool.Def(If(Or(b_missing, Not(agg_is_empty(agg))), False, b))
+    # gt/gte/lt/lte vs bool → type mismatch (numCompare of a non-number) → False
+    return TVLBool.Def(False)
+
+
+_RAW_ORDER = {
+    "gt": lambda x, y: x > y,
+    "gte": lambda x, y: x >= y,
+    "lt": lambda x, y: x < y,
+    "lte": lambda x, y: x <= y,
+}
 
 
 # --- nonlinear fixed-point arithmetic (mul/div, QF_NIA + half-even rounding) ---

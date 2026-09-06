@@ -52,6 +52,14 @@ from .field_contracts import Schema
 from .fixed_point import to_scale14_int
 from .quantifiers import tvl_all, tvl_any, tvl_none
 from .tvl import (
+    AggVal,
+    _agg_cmp_bool,
+    _agg_cmp_num,
+    agg_bool,
+    agg_exists,
+    agg_is_empty,
+    agg_num,
+    agg_to_int,
     TVLBool,
     TVLInt,
     TVLStr,
@@ -96,6 +104,7 @@ from .tvl import (
     tvl_starts_with,
     tvl_sub,
     val_bool,
+    val_int,
 )
 
 from .calendar import tvl_date_add, tvl_date_part, tvl_epoch_ms, tvl_month_last_day
@@ -236,6 +245,16 @@ def _fold(fn, args):
     return acc
 
 
+def _coerce_bool(x):
+    """Coerce an operand to a boolean TVL. AggVal → Def(False) (toBoolean strict === true)."""
+    return agg_bool(x) if x.sort() == AggVal else x
+
+
+def _coerce_int(x):
+    """Coerce an operand to an int TVL. AggVal empty → Missing (type mismatch); num → Def(v)."""
+    return agg_to_int(x) if x.sort() == AggVal else x
+
+
 _EQ_NE_INT = {"eq": tvl_eq, "ne": tvl_ne}
 _EQ_NE_STR = {"eq": tvl_eq_str, "ne": tvl_ne_str}
 _EQ_NE_BOOL = {"eq": tvl_eq_bool, "ne": tvl_ne_bool}
@@ -244,8 +263,17 @@ _ORDER_STR = {"gt": tvl_gt_str, "gte": tvl_gte_str, "lt": tvl_lt_str, "lte": tvl
 
 
 def _cmp_eq(op, a, b):
-    """Type-dispatched equality/inequality (int / string / bool)."""
+    """Type-dispatched equality/inequality (int / string / bool / AggVal)."""
     sa, sb = a.sort(), b.sort()
+    # AggVal operand (empty == boolean false; num == numeric).
+    if sa == AggVal or sb == AggVal:
+        agg, other = (a, b) if sa == AggVal else (b, a)
+        so = other.sort()
+        if so == TVLBool:
+            return _agg_cmp_bool(op, agg, other)
+        if so == TVLInt:
+            return _agg_cmp_num(op, agg, other, is_missing_int(other), val_int(other))
+        raise TypeError(f"eq/ne: AggVal vs {so} unsupported")
     if sa != sb:
         raise TypeError(f"eq/ne operand sort mismatch: {sa} vs {sb}")
     if sa == TVLInt:
@@ -258,8 +286,16 @@ def _cmp_eq(op, a, b):
 
 
 def _cmp_order(op, a, b):
-    """Ordering (gt/gte/lt/lte) — int fields (numeric) / string fields (Unicode code-point)."""
+    """Ordering (gt/gte/lt/lte) — int / string / AggVal operands."""
     sa, sb = a.sort(), b.sort()
+    if sa == AggVal or sb == AggVal:
+        agg, other = (a, b) if sa == AggVal else (b, a)
+        so = other.sort()
+        if so == TVLBool:
+            return _agg_cmp_bool(op, agg, other)
+        if so == TVLInt:
+            return _agg_cmp_num(op, agg, other, is_missing_int(other), val_int(other))
+        raise TypeError(f"ordering op {op!r}: AggVal vs {so} unsupported")
     if sa != sb:
         raise TypeError(f"ordering op {op!r} operand sort mismatch: {sa} vs {sb}")
     if sa == TVLInt:
@@ -270,8 +306,10 @@ def _cmp_order(op, a, b):
 
 
 def _exists(x):
-    """Type-dispatched field-presence sense (int / string / bool)."""
+    """Type-dispatched field-presence sense (int / string / bool / AggVal)."""
     s = x.sort()
+    if s == AggVal:
+        return agg_exists(x)
     if s == TVLInt:
         return exists_int(x)
     if s == TVLStr:
@@ -317,11 +355,11 @@ def _compile_node(expr, ctx):
     if key == "var":
         return ctx.var(str(val))
     if key == "and":
-        return _fold(tvl_and, [compile_expr(a, ctx) for a in val])
+        return _fold(tvl_and, [_coerce_bool(compile_expr(a, ctx)) for a in val])
     if key == "or":
-        return _fold(tvl_or, [compile_expr(a, ctx) for a in val])
+        return _fold(tvl_or, [_coerce_bool(compile_expr(a, ctx)) for a in val])
     if key == "not":
-        return tvl_not(compile_expr(val, ctx))
+        return tvl_not(_coerce_bool(compile_expr(val, ctx)))
 
     if key in _COMPARE_OPS:
         left, right = val[0], val[1]
@@ -335,8 +373,8 @@ def _compile_node(expr, ctx):
         return _cmp_order(key, compile_expr(left, ctx), compile_expr(right, ctx))
 
     if key == "in":
-        x = compile_expr(val[0], ctx)
-        members = [compile_expr(m, ctx) for m in val[1]]
+        x = _coerce_int(compile_expr(val[0], ctx))
+        members = [_coerce_int(compile_expr(m, ctx)) for m in val[1]]
         return _in(x, members)
 
     if key in _STRING_OPS:
@@ -355,14 +393,16 @@ def _compile_node(expr, ctx):
         return tvl_length(compile_expr(val, ctx))
     if key == "between":
         return tvl_between(
-            compile_expr(val[0], ctx), compile_expr(val[1], ctx), compile_expr(val[2], ctx)
+            _coerce_int(compile_expr(val[0], ctx)),
+            _coerce_int(compile_expr(val[1], ctx)),
+            _coerce_int(compile_expr(val[2], ctx)),
         )
 
     if key in _QUANT_KINDS:
         return _quantifier(key, val, ctx)
 
     if key in _ARITH_OPS:
-        return _arith(key, [compile_expr(a, ctx) for a in val])
+        return _arith(key, [_coerce_int(compile_expr(a, ctx)) for a in val])
 
     if key == "days_between":
         return tvl_days_between(compile_expr(val[0], ctx), compile_expr(val[1], ctx))
