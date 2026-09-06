@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] - 2026-09-06
+
+### Fixed
+- **S-expression 形式由 list 重写为 SPEC §12 单键对象**。
+- **空数组 `avg`/`min`/`max` 折叠为 `false`（G2）**。
+- **类型不匹配比较折叠 + null 非对称修复**；**新增 ReDoS 检测**。
+- **补 `not_exists` 键（38 键 S-expr 对齐）**。
+- **`sub`/`div` 元数修复 + 统一 scale-14 定点**；**字符串 NFC 规范化**；**日期节点改为字符串语义**。
+
+### Changed
+- SPEC 章节引用对齐 erdl-spec.md v2.1。
+- 补徽章、POC 欢迎提示与 support 邮箱。
+
 ## [0.1.18] - 2026-09-05
 
 ### Fixed

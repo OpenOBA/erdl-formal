@@ -5,6 +5,19 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] - 2026-09-06
+
+### Fixed
+- **S-expression form rewritten from list to SPEC §12 single-key object**.
+- **Empty-array `avg`/`min`/`max` fold to `false` (G2)**.
+- **Type-mismatched comparison folds + null asymmetry fixed**; **ReDoS detection added**.
+- **`not_exists` key added (38-key S-expr parity)**.
+- **`sub`/`div` arity fixed + unified scale-14 fixed-point**; **string NFC normalization**; **date nodes now string semantics**.
+
+### Changed
+- SPEC section refs aligned to erdl-spec.md v2.1.
+- Added badges, POC-welcome note and support contact.
+
 ## [0.1.18] - 2026-09-05
 
 ### Fixed

@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.18-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+[![Version](https://img.shields.io/badge/version-v0.1.19-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 > 🚀 **欢迎 POC** —— 欢迎你在自己的环境中试用本项目概念验证。需要技术支持？随时联系 [support@openoba.com](mailto:support@openoba.com)。
 
