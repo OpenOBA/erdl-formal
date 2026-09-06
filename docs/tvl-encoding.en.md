@@ -25,9 +25,9 @@ Z3 ADT implementation: `TVLInt = Def(int) | Missing`, `TVLBool = Def(bool) | Mis
 
 `EvalError` → tier≤2 / Guard defaults fail-close (DENY); tier 3–5 folds to `false`. **This SMT kernel has no EvalError constructor** — `EvalError` such as division by zero folds to `Missing` (equivalent to tier 3–5 fold-false); tier≤2 fail-close is runtime behavior, not modeled in the kernel.
 
-## 4. `not`'s exists guard (§11.4)
+## 4. `not`'s exists guard (§5.2)
 
-The core Expression tree's `not` does not auto-add an exists guard. Writing `not(field==x)` in an **ALLOW rule** when the field is absent makes `not(false)=true` **fail-open**; you MUST manually write `exists(field) AND not(field==x)` to guarantee fail-closed. The Simple projection's derived `not_*` operators are already covered by §11.4's compile-layer exists guard.
+The core Expression tree's `not` does not auto-add an exists guard. Writing `not(field==x)` in an **ALLOW rule** when the field is absent makes `not(false)=true` **fail-open**; you MUST manually write `exists(field) AND not(field==x)` to guarantee fail-closed. The Simple projection's derived `not_*` operators are already covered by §5.2's compile-layer exists guard.
 
 ## 5. Decision: leaf collapse (not Kleene)
 

@@ -43,7 +43,7 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 | `eq(a,b)` `ne(a,b)` | `Def(false)` 若任一操作数 Missing；否则 `Def(val(a) = / ≠ val(b))` |
 | `gt(a,b)` `gte` `lt` `lte` | `Def(false)` 若任一 Missing；否则 `Def(val(a) > / ≥ / < / ≤ val(b))`（数值序 / 字符串 Unicode 码点序）|
 
-> **类型不匹配折叠（§7.3(a)/§11.2）**：比较两操作数类型不一致（如 `"100" gt 50`）→ `Def(false)`，禁止隐式转换。
+> **类型不匹配折叠（§7.3(a)/§5.2）**：比较两操作数类型不一致（如 `"100" gt 50`）→ `Def(false)`，禁止隐式转换。
 
 ### 集合（1）
 
@@ -51,7 +51,7 @@ V  = TVL(τ) = Def(value: τ) | Missing          # E11 undefined 哨兵
 
 ### 字符串（4）
 
-`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = 前缀/后缀/包含判定（Missing → `Def(false)`；任一操作数非字符串 → `Def(false)`，§11.2 严格类型匹配）；`match(s,re)` = 安全正则（大小写敏感，ReDoS 防护，步数 ≤10000；非字符串操作数或 ReDoS/非正则模式 → `Def(false)`，对齐引擎运行时折叠）。
+`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = 前缀/后缀/包含判定（Missing → `Def(false)`；任一操作数非字符串 → `Def(false)`，§5.2 严格类型匹配）；`match(s,re)` = 安全正则（大小写敏感，ReDoS 防护，步数 ≤10000；非字符串操作数或 ReDoS/非正则模式 → `Def(false)`，对齐引擎运行时折叠）。
 
 ### 存在/量纲（3）
 

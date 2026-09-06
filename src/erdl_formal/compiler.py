@@ -19,7 +19,7 @@ denotational semantics (`docs/semantics.md`). Covers the full 34-node kernel:
 field / literal / and / or / not / comparison / in / string / exists / length /
 between / quantifier / arithmetic / time / aggregate.
 
-S-expression form (SPEC §12 external form — single-key object, aligned with
+S-expression form (SPEC §5.3 external form — single-key object, aligned with
 the engine's ``s-expression.ts`` ``fromSExpr``):
 
     {"field": "path"} · {"var": "path"} · bare value = literal
@@ -264,7 +264,7 @@ def _coerce_bool(x):
         return x
     if s == AggVal:
         return agg_bool(x)
-    # int / string operands are never === true (SPEC §11.2 no implicit conversion).
+    # int / string operands are never === true (SPEC §5.2 no implicit conversion).
     return TVLBool.Def(False)
 
 
@@ -371,7 +371,7 @@ def _in(x, members):
 
 
 def compile_expr(expr, ctx: CompileContext):
-    """Compile a SPEC §12 S-expression (single-key object) to a Z3 TVL expression."""
+    """Compile a SPEC §5.3 S-expression (single-key object) to a Z3 TVL expression."""
     if isinstance(expr, dict):
         return _compile_node(expr, ctx)
     # bare value → literal
@@ -447,7 +447,7 @@ def _compile_node(expr, ctx):
                 return TVLBool.Def(False)
         right = compile_expr(val[1], ctx)
         if left.sort() != TVLStr or right.sort() != TVLStr:
-            # non-string operand → false (strict type matching §5.2/§11.2).
+            # non-string operand → false (strict type matching §5.2/§5.2).
             return TVLBool.Def(False)
         fn = {
             "contains": tvl_contains,

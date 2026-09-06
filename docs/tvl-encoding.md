@@ -25,9 +25,9 @@ Z3 ADT 实现：`TVLInt = Def(int) | Missing`、`TVLBool = Def(bool) | Missing`�
 
 `EvalError` → tier≤2 / Guard 缺省 fail-close（DENY）；tier 3–5 折叠为 `false`。**本 SMT 内核无 EvalError 数据构造**，除零等 `EvalError` 一律折叠为 `Missing`（等价 tier 3–5 折叠 false）；tier≤2 fail-close 属运行时行为、不在内核建模。
 
-## 4. not 的 exists 守卫（§11.4）
+## 4. not 的 exists 守卫（§5.2）
 
-核心 Expression 树的 `not` 不自动加 exists 守卫。对 **ALLOW 规则**写 `not(field==x)` 且字段缺失时 `not(false)=true` 会 **fail-open**，MUST 手动写 `exists(field) AND not(field==x)` 保证 fail-closed。Simple 投影的 `not_*` 派生算子已由 §11.4 编译层 exists 守卫兜底。
+核心 Expression 树的 `not` 不自动加 exists 守卫。对 **ALLOW 规则**写 `not(field==x)` 且字段缺失时 `not(false)=true` 会 **fail-open**，MUST 手动写 `exists(field) AND not(field==x)` 保证 fail-closed。Simple 投影的 `not_*` 派生算子已由 §5.2 编译层 exists 守卫兜底。
 
 ## 5. 决策：叶子折叠（非 Kleene）
 

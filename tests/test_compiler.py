@@ -14,7 +14,7 @@
 
 """End-to-end: S-expression → symbolic compile → property verification.
 
-S-expression form is the SPEC §12 single-key object form (aligned with the
+S-expression form is the SPEC §5.3 single-key object form (aligned with the
 engine's ``s-expression.ts``): ``{"gt": [{"field": a}, {"field": b}]}``,
 ``{"all": {"binding", "over", "predicate"}}``, ``{"avg": {"field": ...}}``.
 """
@@ -406,7 +406,7 @@ def test_not_exists_alias():
 
 # --- type-error folding (drift 4): verifier folds to false/null, not compile error ---
 #
-# SPEC §7.3(a)/§7.3(e) + §11.2: type-mismatched operands fold at evaluation time
+# SPEC §7.3(a)/§7.3(e) + §5.2: type-mismatched operands fold at evaluation time
 # (false / null + type_mismatch), never a compile error. The verifier mirrors the
 # engine's runtime fold (toBoolean strict === true, toRational → null → Missing).
 
@@ -437,7 +437,7 @@ def test_in_non_array_right_folds_false():
 
 def test_contains_non_string_operand_folds_false():
     s = _int_schema("age")
-    # contains(int_field, "x") → non-string operand → false (§11.2)
+    # contains(int_field, "x") → non-string operand → false (§5.2)
     assert can_fire({"contains": [{"field": "age"}, "x"]}, s, premises=["age"]) is False
 
 

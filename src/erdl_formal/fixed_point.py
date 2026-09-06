@@ -17,7 +17,7 @@
 Spec v2.1 §7.2 E2 + §7.3(c):
 - intermediate computation uses high-precision bounded rationals (128-bit num/den)
 - ONLY output nodes round to scale=14 + half-even (banker's rounding)
-- serialization uses minimal representation (§28.2)
+- serialization uses minimal representation (§8.2)
 
 This is the *reference semantics* (exact rational) that the SMT model
 (QF_LIA linear / QF_NRA nonlinear) is validated against via counterexample replay.
@@ -32,7 +32,7 @@ _SCALE_FACTOR = 10 ** SCALE
 def parse(s: str) -> Fraction:
     """Parse a decimal string → exact Fraction.
 
-    Rejects scientific notation (spec §28.2 minimal representation forbids it).
+    Rejects scientific notation (spec §8.2 minimal representation forbids it).
     """
     if "e" in s.lower() or "E" in s:
         raise ValueError(f"non-minimal: scientific notation: {s!r}")
@@ -63,7 +63,7 @@ def to_scale14_half_even(v: Fraction) -> Fraction:
 
 
 def serialize(v: Fraction) -> str:
-    """Serialize in minimal representation (§28.2): no trailing zeros, integer
+    """Serialize in minimal representation (§8.2): no trailing zeros, integer
     part without decimal point. Exact (no float, no format-precision default)."""
     n, d = v.numerator, v.denominator
     sign = "-" if n < 0 else ""

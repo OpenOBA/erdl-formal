@@ -43,7 +43,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 | `eq(a,b)` `ne(a,b)` | `Def(false)` if either operand is Missing; otherwise `Def(val(a) = / ≠ val(b))` |
 | `gt(a,b)` `gte` `lt` `lte` | `Def(false)` if either is Missing; otherwise `Def(val(a) > / ≥ / < / ≤ val(b))` (numeric order / string Unicode code-point order) |
 
-> **Type-mismatch collapse (§7.3(a)/§11.2)**: comparing two operands of different types (e.g. `"100" gt 50`) → `Def(false)`; no implicit conversion.
+> **Type-mismatch collapse (§7.3(a)/§5.2)**: comparing two operands of different types (e.g. `"100" gt 50`) → `Def(false)`; no implicit conversion.
 
 ### Set (1)
 
@@ -51,7 +51,7 @@ Let `ctx : Context` (field mapping), `⟦e⟧(ctx) : V`.
 
 ### String (4)
 
-`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = prefix/suffix/contains predicates (Missing → `Def(false)`; any non-string operand → `Def(false)`, §11.2 strict type matching); `match(s,re)` = safe regex (case-sensitive, ReDoS-protected, step count ≤10000; non-string operand or ReDoS/non-regular pattern → `Def(false)`, aligning with the engine's runtime fold).
+`contains(s,t)` / `starts_with(s,t)` / `ends_with(s,t)` = prefix/suffix/contains predicates (Missing → `Def(false)`; any non-string operand → `Def(false)`, §5.2 strict type matching); `match(s,re)` = safe regex (case-sensitive, ReDoS-protected, step count ≤10000; non-string operand or ReDoS/non-regular pattern → `Def(false)`, aligning with the engine's runtime fold).
 
 ### Existence / dimension (3)
 
