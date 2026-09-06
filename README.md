@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.18-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE)
+[![Version](https://img.shields.io/badge/version-v0.1.18-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 A formal verifier for the ERDL expression kernel — proving rule safety over all inputs with Z3.
 
