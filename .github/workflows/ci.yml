@@ -44,6 +44,11 @@ jobs:
         run: |
           npm ci
           npm run build
+      - name: Generate V-ENGINE answers (oracle isolation)
+        working-directory: erdl-vectors
+        run: |
+          npm ci
+          npm run generate:vengine
 
       - uses: actions/setup-python@v5
         with:
