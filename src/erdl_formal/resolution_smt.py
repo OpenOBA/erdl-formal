@@ -21,9 +21,13 @@ catch-all fallback). Its ERDL-specific properties were previously "verified"
 by handwritten unit tests — sampling, not proof.
 
 This module encodes the *same* semantics as Z3 constraints over a *bounded*
-rule-set, so the properties can be proven over ALL rule-sets (UNSAT over the
-negation). Any SAT counterexample is a concrete, replayable rule-set that can
-be fed back into the real engine for cross-validation.
+rule-set: ``ResolutionFold(n)`` models exactly ``n`` symbolic rule positions,
+and a property is proven UNSAT over every rule-set of **exactly n positions**
+(an exhaustive symbolic proof at cardinality n). The proofs are checked at
+n ∈ {2,3,4}; there is **no** induction or padding argument extending them to
+arbitrary rule-set length — this is a bounded, not an unbounded, assurance.
+Any SAT counterexample is a concrete, replayable rule-set that can be fed back
+into the real engine for cross-validation.
 
 Faithfulness (no divergence between this Z3 model and the reference) is
 guaranteed by ``tests/test_resolution_smt.py``, which exhaustively cross-checks
@@ -313,7 +317,9 @@ class ResolutionFold:
 
 
 def _prove(n, bad_terms, gate="global"):
-    """UNSAT over the bad terms ⇒ property holds for ALL rule-sets of size ≤ n.
+    """UNSAT over the bad terms ⇒ property holds for every rule-set of exactly
+    ``n`` modeled positions (a bounded proof at cardinality ``n``, checked at
+    n ∈ {2,3,4} by the tests — not an unbounded proof over arbitrary length).
 
     Returns ``(holds, model)``: ``holds=True`` when UNSAT; otherwise a concrete
     counterexample model is returned for replay. ``gate`` selects the intended

@@ -74,7 +74,7 @@ No test cases. No sampling. Z3 searches the space of **all integers** for an inp
 | emergency-shortcut | EMERGENCY_HALT short-circuits the moment it fires | **ERDL-specific** |
 | catch-all-neutral | a catch-all (empty-condition) rule never rewrites an established decision, in either direction (EMERGENCY_HALT excepted) | **ERDL-specific** |
 
-Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **all rule-sets** — not sampling, a full proof. Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
+Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **every rule-set of exactly n modeled positions** (a bounded exhaustive proof at cardinalities n∈{2,3,4}, not sampling — but also not an unbounded proof over arbitrary length). Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
 ## 34/34 nodes, E2/E8/E10/E11/E12 evaluation semantics
 

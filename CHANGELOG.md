@@ -86,7 +86,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Resolution-layer properties as SMT proofs** (`resolution_smt.py`): encodes `resolve()`'s ring / override / priority ordering as Z3 constraints; `override_soundness` / `ring_respect` / `emergency_shortcut` are proven UNSAT over ALL rule-sets — from 10 handwritten samples to a full proof.
+- **Resolution-layer properties as SMT proofs** (`resolution_smt.py`): encodes `resolve()`'s ring / override / priority ordering as Z3 constraints; `override_soundness` / `ring_respect` / `emergency_shortcut` are proven UNSAT over every rule-set of exactly n modeled positions (bounded exhaustive proof at n∈{2,3,4}) — from 10 handwritten samples to a bounded symbolic proof.
 - Differential verification (`test_resolution_smt.py`): exhaustive + random cross-check of the Z3 fold against the reference `resolve()`, guaranteeing no divergence; non-vacuity (antecedent reachable) is also asserted.
 
 ### Removed
