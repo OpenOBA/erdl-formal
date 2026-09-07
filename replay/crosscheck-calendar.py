@@ -21,7 +21,7 @@ from datetime import datetime, timezone
 from z3 import simplify
 
 from erdl_formal.calendar import tvl_date_add, tvl_date_part, tvl_month_last_day
-from erdl_formal.tvl import TVLInt, val_int
+from erdl_formal.tvl import TVLInt, val_int, val_str, str_def
 
 VECTORS = os.path.join(os.path.dirname(__file__), "..", "..", "erdl-vectors", "v-engine-vectors.json")
 
@@ -32,6 +32,10 @@ def epoch_ms(s):
 
 def _v(expr):
     return simplify(val_int(expr)).as_long()
+
+
+def _vs(expr):
+    return simplify(val_str(expr)).as_string()
 
 
 def main():
@@ -49,7 +53,9 @@ def main():
         if v["category"] != "V-ENGINE" or v.get("node") not in ("date_part", "month_last_day", "date_add"):
             continue
         exp = answers.get(v["id"])
-        if exp["errored"]:
+        if exp["errored"] or exp.get("value") is None:
+            # errored vectors, or valid-but-invalid-date vectors (value null +
+            # warnings "invalid_date") — nothing concrete to cross-check.
             continue
         expr = v["expr_tree"]
         node = v["node"]
@@ -59,20 +65,20 @@ def main():
                 unit, arg = expr["date_part"]["unit"], expr["date_part"]["arg"]
                 if not isinstance(arg, str):
                     continue
-                got = _v(tvl_date_part(unit, TVLInt.Def(epoch_ms(arg))))
+                got = _v(tvl_date_part(unit, str_def(arg)))
                 expected = exp["value"]
             elif node == "month_last_day":
                 arg = expr["month_last_day"]
                 if not isinstance(arg, str):
                     continue
-                got = _v(tvl_month_last_day(TVLInt.Def(epoch_ms(arg))))
-                expected = epoch_ms(exp["value"])
+                got = _vs(tvl_month_last_day(str_def(arg)))
+                expected = exp["value"]
             else:  # date_add
                 unit, base, amount = expr["date_add"]["unit"], expr["date_add"]["base"], expr["date_add"]["amount"]
                 if not isinstance(base, str):
                     continue
-                got = _v(tvl_date_add(unit, TVLInt.Def(epoch_ms(base)), TVLInt.Def(int(amount) * 10 ** 14)))
-                expected = epoch_ms(exp["value"])
+                got = _vs(tvl_date_add(unit, str_def(base), TVLInt.Def(int(amount) * 10 ** 14)))
+                expected = exp["value"]
         except (ValueError, KeyError, NotImplementedError):
             continue
 

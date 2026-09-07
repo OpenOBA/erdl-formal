@@ -1,0 +1,9 @@
+fix(crosscheck): align calendar cross-check to date-string semantics
+
+crosscheck-calendar.py still passed epoch-ms ints to the date nodes after
+56cbcf3 aligned them to date-string semantics, so the CI vector cross-check
+failed with "Sort mismatch". Update the three call sites to pass the date
+string directly (str_def) and read the answer value as-is (string for
+date_add/month_last_day, int for date_part), and skip vectors whose answer
+value is null (valid-but-invalid-date vectors carry warnings "invalid_date"
+with value null, not errored=true).
