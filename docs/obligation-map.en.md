@@ -17,7 +17,7 @@ asked for: an obligation with no mapped property shows up here as a **gap**
 | §7.1.3 — `override` enumeration `critical` > `high` > `normal` > `low` | `override_rank()` + differential grid | input contract (sorting) | ✅ anchored |
 | §7.1.4 — equal priority + equal override → definition order | `sorted_premise()` (array order) | input contract (sorting) | ✅ anchored |
 | §7.1.5a — `override` only DENY→ALLOW (never to a less-safe state) | `override_soundness` | safety (must-not) | ✅ proved |
-| §7.1.5b — `critical`/`high` works across rings: higher-ring override ALLOW covers lower-ring DENY | *none* | capability (reachability) | ⚠️ gap — see below |
+| §7.1.5b — `critical`/`high` works across rings: higher-ring override ALLOW covers lower-ring DENY | `test_cross_ring_override_allow_covers_deny_reachable` + `test_same_ring_override_allow_covers_deny_reachable` | capability (reachability) | ✅ reachable (non-vacuity) |
 | §7.1.6 — catch-all MUST NOT rewrite an explicit-condition decision | `catch_all_inert_when_explicit` | safety (must-not) | ✅ proved + mutation-tested |
 | §7.1.6a (quantifier 1) — catch-all's `then` irrelevant to the final decision | `catch_all_then_irrelevant_when_explicit` | safety, over the decision observable | ✅ proved + mutation-tested |
 | §7.1.6b (quantifier 2) — catch-all's `override` irrelevant to the final decision | `catch_all_override_irrelevant_when_explicit` | safety, over the decision observable | ✅ proved + mutation-tested |
@@ -41,19 +41,6 @@ asked for: an obligation with no mapped property shows up here as a **gap**
 
 ## Gaps
 
-### ⚠️ §7.1.5b — higher-ring override ALLOW covers lower-ring DENY
-
-`override_soundness` proves only the *negative* half of §7.1.5 (a same-ring
-override DENY never tightens ALLOW). It does **not** prove the *positive* half:
-that a `critical`/`high` override ALLOW genuinely covers a lower-ring
-DENY/ROLLBACK/QUARANTINE **without comparing ring**. In the fold this is the
-`allow_relax` branch (`dec == ALLOW & enables & has & is_restrictive(fin)`).
-
-This is a **capability**, so it should be closed with a non-vacuity proof that
-the cross-ring relax is reachable — not a new UNSAT property. Tracked as a
-follow-up; not a correctness defect (the capability is exercised by the
-differential grid).
-
 ### Sorting rules (§7.1.1–4) have no independent UNSAT property
 
 The sorting rules are modeled as the fold's input contract rather than as
@@ -62,9 +49,21 @@ against the hand-written reference. If the reference and the fold shared the
 same mis-reading of a sorting rule, neither the grid nor any property would
 catch it. In practice these rules are mechanical (numeric ascending / fixed
 enum order / stable definition order) and their mis-reading is not the kind of
-subtle cross-rule bug §7.1.6 was; the *independence* gap is real but bounded,
-and the true independent anchor for §7.1 remains a third-party runner (see
-`erdl-vectors`).
+subtle cross-rule bug §7.1.6 was; the *independence* gap is real but bounded.
+
+The definitive independent anchor for §7.1 is a third-party runner — see the
+**runner call** below.
+
+### §7.1 resolution semantics — independent runner call (open)
+
+The §7.1 ring/override/catch-all resolution semantics do **not yet** have a
+third-party independent implementation. `erdl-vectors`' existing runners
+(norviq-go, concordia-python) cover the Decision Object hash layer and the
+expression kernel, not §7.1 resolution. A third-party runner that re-derives
+§7.1 from the SPEC text alone (as those runners did for the hash layer) is
+**actively being recruited** — once it lands, the fold/reference pair gains an
+independent anchor that breaks the "one reading shared by both" circularity
+ANP2 flagged.
 
 ## How this map is produced (mechanical extraction)
 

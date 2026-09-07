@@ -1,0 +1,7 @@
+test(resolution-smt): close 7.1.5b capability gap + runner-call wording
+
+- add non-vacuity reachability tests for the cross-ring and same-ring
+  override ALLOW covering a DENY/ROLLBACK/QUARANTINE (7.1.5b positive half,
+  previously an unmapped gap)
+- obligation-map: mark 7.1.5b closed, and restate the missing independent
+  anchor for 7.1 resolution as an open third-party runner call

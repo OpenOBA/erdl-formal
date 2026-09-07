@@ -323,6 +323,40 @@ def _antecedent_sat(n, antecedent):
     return s.check() == sat
 
 
+def test_cross_ring_override_allow_covers_deny_reachable():
+    """§7.1.5b (positive half): a higher-ring override ALLOW genuinely covers a
+    lower-ring DENY/ROLLBACK/QUARANTINE **without comparing ring** — the
+    capability that `override_soundness` (the negative half) does not assert.
+    This is a capability, so it is closed by reachability (non-vacuity), not UNSAT.
+    """
+    reachable = _antecedent_sat(
+        2,
+        lambda st: (st["effective"] & (st["dec"] == ALLOW) & st["enables"]
+                    & st["has_before"]
+                    & Or(st["final_before"] == DENY,
+                         st["final_before"] == ROLLBACK,
+                         st["final_before"] == QUARANTINE)
+                    & (st["ring"] > st["final_ring_before"])
+                    & (st["final_after"] == ALLOW)),
+    )
+    assert reachable
+
+
+def test_same_ring_override_allow_covers_deny_reachable():
+    """§7.1.5b, same-ring case: override ALLOW also covers a same-ring DENY."""
+    reachable = _antecedent_sat(
+        2,
+        lambda st: (st["effective"] & (st["dec"] == ALLOW) & st["enables"]
+                    & st["has_before"]
+                    & Or(st["final_before"] == DENY,
+                         st["final_before"] == ROLLBACK,
+                         st["final_before"] == QUARANTINE)
+                    & (st["ring"] == st["final_ring_before"])
+                    & (st["final_after"] == ALLOW)),
+    )
+    assert reachable
+
+
 def test_override_soundness_antecedent_reachable():
     # A same-ring override DENY after an ALLOW genuinely occurs.
     reachable = _antecedent_sat(

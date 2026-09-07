@@ -13,7 +13,7 @@
 | §7.1.3 — `override` 枚举 `critical` > `high` > `normal` > `low` | `override_rank()` + 差分穷举 | 输入契约（排序）| ✅ 已锚定 |
 | §7.1.4 — 同 priority + 同 override → 定义顺序 | `sorted_premise()`（数组序）| 输入契约（排序）| ✅ 已锚定 |
 | §7.1.5a — `override` 仅 DENY→ALLOW（不得越权到更不安全状态）| `override_soundness` | 安全（禁止型）| ✅ 已证明 |
-| §7.1.5b — `critical`/`high` 跨 ring 生效：高 ring 的 override ALLOW 覆盖低 ring DENY | *无* | 能力（可达性）| ⚠️ 缺口 — 见下 |
+| §7.1.5b — `critical`/`high` 跨 ring 生效：高 ring 的 override ALLOW 覆盖低 ring DENY | `test_cross_ring_override_allow_covers_deny_reachable` + `test_same_ring_override_allow_covers_deny_reachable` | 能力（可达性）| ✅ 可达（非空真）|
 | §7.1.6 — catch-all 不得改写显式条件规则建立的决策 | `catch_all_inert_when_explicit` | 安全（禁止型）| ✅ 已证明 + 变异测试 |
 | §7.1.6a（量词 1）— catch-all 的 `then` 对最终决策无关 | `catch_all_then_irrelevant_when_explicit` | 安全，基于决策观察量 | ✅ 已证明 + 变异测试 |
 | §7.1.6b（量词 2）— catch-all 的 `override` 对最终决策无关 | `catch_all_override_irrelevant_when_explicit` | 安全，基于决策观察量 | ✅ 已证明 + 变异测试 |
@@ -29,15 +29,15 @@
 
 ## 缺口
 
-### ⚠️ §7.1.5b — 高 ring 的 override ALLOW 覆盖低 ring DENY
-
-`override_soundness` 只证明了 §7.1.5 的*否定*半边（同 ring 的 override DENY 不会把 ALLOW 收紧为 DENY）。它**没有**证明*肯定*半边：`critical`/`high` 的 override ALLOW 确实能**不比较 ring 地**覆盖低 ring 的 DENY/ROLLBACK/QUARANTINE。在 fold 里这是 `allow_relax` 分支（`dec == ALLOW & enables & has & is_restrictive(fin)`）。
-
-这是一条**能力**，应以「跨 ring 放松可达」的非空真证明来关闭，而非新增 UNSAT 属性。记为跟进项；不是正确性缺陷（该能力已被差分穷举所覆盖）。
-
 ### 排序规则（§7.1.1–4）无独立 UNSAT 属性
 
-排序规则被建模为 fold 的输入契约，而非被证明的后置条件。它们由针对手写参考实现的穷举差分所锚定。若参考实现与 fold 共享了同一排序规则的误读，则穷举与任何属性都无法抓到。实践中这些规则是机械的（数值升序 / 固定枚举序 / 稳定定义序），其误读不属于 §7.1.6 那种精妙的跨规则缺陷；*独立性*缺口真实但有限，而 §7.1 真正的独立锚定仍依赖第三方 runner（见 `erdl-vectors`）。
+排序规则被建模为 fold 的输入契约，而非被证明的后置条件。它们由针对手写参考实现的穷举差分所锚定。若参考实现与 fold 共享了同一排序规则的误读，则穷举与任何属性都无法抓到。实践中这些规则是机械的（数值升序 / 固定枚举序 / 稳定定义序），其误读不属于 §7.1.6 那种精妙的跨规则缺陷；*独立性*缺口真实但有限。
+
+§7.1 的决定性独立锚定依赖第三方 runner——见下方**征集**。
+
+### §7.1 裁决语义 — 第三方 runner 征集中（开放）
+
+§7.1 的 ring/override/catch-all 裁决语义**目前还没有**第三方独立实现。`erdl-vectors` 现有的 runner（norviq-go、concordia-python）覆盖的是 Decision Object 哈希层与表达式内核，不覆盖 §7.1 裁决。一个仅凭 SPEC 文本独立重新推导 §7.1 的第三方 runner（正如它们在哈希层所做的那样）**正在积极征集中**——一旦落地，fold/reference 这一对实现将获得一个独立锚点，打破 ANP2 所指的「两者共享同一解读」的循环。
 
 ## 本映射表的产出方式（机械提取）
 
