@@ -1,7 +1,0 @@
-chore(release): bump to 0.1.20 + fix property-list drift
-
-- version 0.1.19 -> 0.1.20 (pyproject + README badges)
-- CHANGELOG entries (EN + CN) for 0.1.20
-- README / DEVELOPER-GUIDE: update property list from the removed
-  catch_all_neutral to the seven current resolution properties;
-  7.1 count five -> seven
