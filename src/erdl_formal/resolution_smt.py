@@ -429,6 +429,38 @@ def catch_all_then_irrelevant_when_explicit(n=4, gate="global"):
     return False, s.model()
 
 
+def catch_all_override_irrelevant_when_explicit(n=4, gate="global"):
+    """§7.1 item 6, second quantifier: a catch-all rule's ``override`` value is
+    irrelevant to the final decision when an explicit-condition rule is present.
+
+    SPEC §7.1.6 binds *two* independent quantifiers over the catch-all rule:
+    "whether its `then` is DENY or ALLOW **and whether or not it carries
+    `override`**". ``catch_all_then_irrelevant_when_explicit`` covers the
+    first; this property covers the second — a catch-all that carries
+    ``override: critical/high`` must still not rewrite an explicit decision.
+
+    Same counterfactual technique over the decision observable: substitute any
+    other override value for a catch-all rule's ``ovr`` and the final decision
+    is unchanged. Mutation testing (``gate=`` a mutant) must KILL it.
+    """
+    m = ResolutionFold(n, gate=gate)
+    s = Solver()
+    for c in m.domain_constraints() + m.sorted_premise():
+        s.add(c)
+    final, _ = m.build()
+    has_explicit = m.has_explicit()
+    bad = []
+    for i in range(n):
+        alt = Const(f"alt_ovr_{i}", Override)
+        final_alt = substitute(final, (m.ovr[i], alt))
+        bad.append(And(m.catch_all[i], has_explicit, final != final_alt))
+    s.add(Or(*bad))
+    r = s.check()
+    if r == unsat:
+        return True, None
+    return False, s.model()
+
+
 def emergency_shortcut(n=4):
     """EMERGENCY_HALT short-circuits on hit (full resolve), and is terminal (no later rule can rewrite it)."""
     def bad(steps):

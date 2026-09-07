@@ -19,7 +19,8 @@ asked for: an obligation with no mapped property shows up here as a **gap**
 | §7.1.5a — `override` only DENY→ALLOW (never to a less-safe state) | `override_soundness` | safety (must-not) | ✅ proved |
 | §7.1.5b — `critical`/`high` works across rings: higher-ring override ALLOW covers lower-ring DENY | *none* | capability (reachability) | ⚠️ gap — see below |
 | §7.1.6 — catch-all MUST NOT rewrite an explicit-condition decision | `catch_all_inert_when_explicit` | safety (must-not) | ✅ proved + mutation-tested |
-| §7.1.6 (independence) — catch-all's `then` irrelevant to the final decision | `catch_all_then_irrelevant_when_explicit` | safety, over the decision observable | ✅ proved + mutation-tested |
+| §7.1.6a (quantifier 1) — catch-all's `then` irrelevant to the final decision | `catch_all_then_irrelevant_when_explicit` | safety, over the decision observable | ✅ proved + mutation-tested |
+| §7.1.6b (quantifier 2) — catch-all's `override` irrelevant to the final decision | `catch_all_override_irrelevant_when_explicit` | safety, over the decision observable | ✅ proved + mutation-tested |
 | §7.0.2 — ring order 0→3 | `ring_respect` | safety (DENY direction) | ✅ proved |
 | §7.0.2 — EMERGENCY_HALT short-circuits on hit | `emergency_shortcut` | safety (terminal) | ✅ proved |
 | §7.0.2 — WORKFLOW short-circuits into its state machine | `workflow_shortcut` | safety (terminal) | ✅ proved |
@@ -64,3 +65,24 @@ enum order / stable definition order) and their mis-reading is not the kind of
 subtle cross-rule bug §7.1.6 was; the *independence* gap is real but bounded,
 and the true independent anchor for §7.1 remains a third-party runner (see
 `erdl-vectors`).
+
+## How this map is produced (mechanical extraction)
+
+This table is not a curated summary — it is a **sentence-by-sentence
+projection** of SPEC §7.1 / §7.0.2 onto the property list (ANP2 Network:
+"the sentence-by-sentence extraction stays trusted input, not the goal").
+Concretely:
+
+1. Each *normative* clause of §7.1 (§7.1.1–6) and each short-circuit clause of
+   §7.0.2 becomes one row.
+2. A clause carrying several conjuncts or quantifiers is **split** — one row
+   per quantifier/conjunct (§7.1.5 → 5a negative / 5b positive; §7.1.6 → 6a
+   `then` / 6b `override`). Splitting is what surfaced 6b as a previously
+   unmapped obligation.
+3. A row is **closed** iff there is a named property whose docstring quotes
+   that obligation and whose test asserts it (proved + mutation-tested). A row
+   with no such property is a **gap**, listed under "Gaps" above.
+
+The extraction itself is trusted input (a human reads the SPEC); the *goal* is
+the resulting coverage bound — every obligation is either closed or visibly a
+gap, so a reviewer never has to discover an unmapped obligation by hand.
