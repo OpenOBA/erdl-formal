@@ -7,6 +7,7 @@
 | `semantics.en.md` | **Denotational semantics** for the 34 nodes (input→output math definition; the compiler's encoding basis) |
 | `tvl-encoding.en.md` | **Three-valued logic SMT encoding spec** (leaf collapse, not Kleene) |
 | `field-contracts.en.md` | **Verification schema contracts** (field type / cardinality / optionality) |
+| `obligation-map.en.md` | **§7.1/§7.0.2 obligation → property map** (each SPEC obligation → the property proving it → status; gaps listed explicitly) |
 | `DEVELOPER-GUIDE.en.md` | **Developer guide**: architecture / adding a node / a property / a cross-check / API reference / build & publish |
 
 ## Contributing & security (repo root)

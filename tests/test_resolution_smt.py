@@ -55,6 +55,7 @@ from erdl_formal.resolution_smt import (
     ResolutionFold,
     WORKFLOW,
     catch_all_inert_when_explicit,
+    catch_all_then_irrelevant_when_explicit,
     emergency_shortcut,
     override_soundness,
     ring_respect,
@@ -259,6 +260,27 @@ def test_catch_all_inert_when_explicit_holds():
     for n in (2, 3, 4):
         holds, model = catch_all_inert_when_explicit(n)
         assert holds, f"catch-all-inert-when-explicit violated at n={n}: {model}"
+
+
+def test_catch_all_then_irrelevant_when_explicit_holds():
+    """§7.1 item 6 over the decision observable: with an explicit rule present,
+    a catch-all's `then` value is irrelevant to the final decision (UNSAT over
+    the counterfactual)."""
+    for n in (2, 3, 4):
+        holds, model = catch_all_then_irrelevant_when_explicit(n)
+        assert holds, f"catch-all then-irrelevant violated at n={n}: {model}"
+
+
+def test_catch_all_then_irrelevant_detects_mutants():
+    """The counterfactual property is a detector over the decision observable,
+    not a restatement of the fold's internal `effective` flag: each broken gate
+    makes the catch-all's `then` observable in the final decision (SAT)."""
+    for gate in _MUTANTS:
+        holds, model = catch_all_then_irrelevant_when_explicit(4, gate=gate)
+        assert not holds, (
+            f"mutant '{gate}': catch-all then-irrelevant held (UNSAT) even though "
+            f"the gate is broken — no detector for this obligation"
+        )
 
 
 def test_workflow_shortcut_holds():

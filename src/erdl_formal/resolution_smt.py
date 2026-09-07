@@ -54,6 +54,7 @@ from z3 import (
     Or,
     Solver,
     sat,
+    substitute,
     unsat,
 )
 
@@ -381,6 +382,51 @@ def catch_all_inert_when_explicit(n=4, gate="global"):
     def bad(steps):
         return [And(st["effective"], st["catch_all"], st["has_explicit"]) for st in steps]
     return _prove(n, bad, gate=gate)
+
+
+def catch_all_then_irrelevant_when_explicit(n=4, gate="global"):
+    """§7.1 item 6 stated over the SPEC's OWN observable — the final decision.
+
+    This is the *independence* fix for ``catch_all_inert_when_explicit``: that
+    property reasons about the fold's internal ``effective`` flag (which is
+    itself defined by the very gate under test), so it can only detect a gate
+    that diverges from its own encoding — not a gate that diverges from the
+    SPEC text. ANP2's point, sharpened: "both [the fold and the reference]
+    came from one reading of clause 7.1 item 6, so they can agree on the same
+    misreading".
+
+    This property breaks that circularity by quantifying over the clause's own
+    observable. SPEC §7.1 item 6 says a catch-all rule "whether its `then` is
+    DENY or ALLOW ... MUST NOT override the decision established by an
+    explicit-condition rule". Contrapose: whenever an explicit-condition rule
+    is present, a catch-all rule's `then` value is *irrelevant* to the final
+    decision — substitute any other decision value for it and the outcome is
+    unchanged. That is a counterfactual over the decision observable, not over
+    any fold-internal eligibility flag.
+
+    Encoded as: for every catch-all rule ``i`` in the presence of an explicit
+    rule, ``final[dec_i := alt] == final`` for an arbitrary ``alt``; the
+    property holds iff that equality cannot be violated (UNSAT over
+    ``final != final[dec_i := alt]``). Mutation testing (``gate=`` a mutant)
+    must KILL it — a broken gate makes the catch-all's `then` observable in
+    the final decision.
+    """
+    m = ResolutionFold(n, gate=gate)
+    s = Solver()
+    for c in m.domain_constraints() + m.sorted_premise():
+        s.add(c)
+    final, _ = m.build()
+    has_explicit = m.has_explicit()
+    bad = []
+    for i in range(n):
+        alt = Const(f"alt_{i}", Decision)
+        final_alt = substitute(final, (m.dec[i], alt))
+        bad.append(And(m.catch_all[i], has_explicit, final != final_alt))
+    s.add(Or(*bad))
+    r = s.check()
+    if r == unsat:
+        return True, None
+    return False, s.model()
 
 
 def emergency_shortcut(n=4):
