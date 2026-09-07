@@ -1,7 +1,0 @@
-docs(resolution-smt): state the bounded nature of resolution proofs honestly
-
-ResolutionFold(n) models exactly n symbolic positions, and _prove is UNSAT
-at n in {2,3,4} with no induction/padding argument to arbitrary length.
-The previous "ALL rule-sets" wording overstated the assurance. Clarify in
-the module docstring, _prove docstring, README, and CHANGELOG that these
-are bounded exhaustive proofs, not unbounded ones.
