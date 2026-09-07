@@ -122,10 +122,11 @@ class ResolutionFold:
     transition" conditions.
     """
 
-    def __init__(self, n, prio_max=None):
+    def __init__(self, n, prio_max=None, gate="global"):
         assert n >= 1
         self.n = n
         self.prio_max = n - 1 if prio_max is None else prio_max
+        self.gate = gate
         self.dec = [Const(f"dec_{i}", Decision) for i in range(n)]
         self.ring = [Int(f"ring_{i}") for i in range(n)]
         self.prio = [Int(f"prio_{i}") for i in range(n)]
@@ -170,6 +171,42 @@ class ResolutionFold:
         """Global §7.1 item 6 premise: some explicit-condition rule is present."""
         return Or(*[Not(self.catch_all[i]) for i in range(self.n)])
 
+    def has_explicit_same_ring(self, i):
+        """Some *other* explicit-condition rule shares rule ``i``'s ring."""
+        return Or(*[And(Not(self.catch_all[j]), self.ring[j] == self.ring[i])
+                    for j in range(self.n) if j != i])
+
+    def has_explicit_same_priority(self, i):
+        """Some *other* explicit-condition rule shares rule ``i``'s priority."""
+        return Or(*[And(Not(self.catch_all[j]), self.prio[j] == self.prio[i])
+                    for j in range(self.n) if j != i])
+
+    def catch_all_gate(self, i):
+        """§7.1 item 6 eligibility gate for rule ``i``.
+
+        ``self.gate`` selects the intended semantics or a deliberately-broken
+        mutant, for mutation testing. Each mutant must be *detected* by
+        ``catch_all_inert_when_explicit`` (i.e. produce a counterexample) —
+        otherwise the property merely restates the gate instead of detecting
+        violations.
+        """
+        catch_all = self.catch_all[i]
+        if self.gate == "none":
+            # eligibility gate removed: a catch-all always takes effect
+            return BoolVal(True)
+        if self.gate == "invert":
+            # has_explicit inverted: catch-all takes effect only when an
+            # explicit rule IS present (backwards fallback)
+            return Or(Not(catch_all), self.has_explicit())
+        if self.gate == "same_ring":
+            # suppression limited to explicit matches in the same ring
+            return Or(Not(catch_all), Not(self.has_explicit_same_ring(i)))
+        if self.gate == "same_priority":
+            # suppression limited to explicit matches at the same priority
+            return Or(Not(catch_all), Not(self.has_explicit_same_priority(i)))
+        # global (intended): catch-all effective only when NO explicit rule exists
+        return Or(Not(catch_all), Not(self.has_explicit()))
+
     # -- the fold ---------------------------------------------------------
 
     def build(self):
@@ -199,7 +236,7 @@ class ResolutionFold:
             process = Or(Not(skip), ring > sring)
             # §7.1 item 6 (global): a catch-all rule takes effect only when NO
             # explicit-condition rule is present anywhere in the matched set.
-            catch_all_ok = Or(Not(catch_all), Not(has_explicit))
+            catch_all_ok = self.catch_all_gate(i)
 
             # Terminal decisions short-circuit the whole resolve (SPEC §7.0.2
             # "命中即短路" for EMERGENCY_HALT; §6 state machine for WORKFLOW),
@@ -274,13 +311,14 @@ class ResolutionFold:
 # --- property proofs -----------------------------------------------------
 
 
-def _prove(n, bad_terms):
+def _prove(n, bad_terms, gate="global"):
     """UNSAT over the bad terms ⇒ property holds for ALL rule-sets of size ≤ n.
 
     Returns ``(holds, model)``: ``holds=True`` when UNSAT; otherwise a concrete
-    counterexample model is returned for replay.
+    counterexample model is returned for replay. ``gate`` selects the intended
+    catch-all gate or a mutant (mutation testing).
     """
-    m = ResolutionFold(n)
+    m = ResolutionFold(n, gate=gate)
     s = Solver()
     for c in m.domain_constraints() + m.sorted_premise():
         s.add(c)
@@ -325,7 +363,7 @@ def ring_respect(n=4):
     return _prove(n, bad)
 
 
-def catch_all_inert_when_explicit(n=4):
+def catch_all_inert_when_explicit(n=4, gate="global"):
     """§7.1 item 6 (global): a catch-all rule never takes effect when any
     explicit-condition rule is present in the matched set.
 
@@ -333,13 +371,16 @@ def catch_all_inert_when_explicit(n=4):
     stated in its *global* form: a fallback rule carries the weak, general
     intent of "all other cases"; it MUST NOT rewrite the strong, specific
     decision established by an explicit-condition rule — regardless of ring or
-    override. In the fold this is encoded directly as ``catch_all_ok``, so this
-    property is UNSAT-by-construction; the non-vacuity check (a catch-all rule
-    is reachable when no explicit rule exists) is asserted in the tests.
+    override. Over the intended fold (``gate="global"``) this is
+    UNSAT-by-construction (encoded directly as ``catch_all_ok``); mutation
+    testing (``gate=`` a mutant) proves it is a genuine *detector* rather than
+    a restatement — each broken gate must yield a counterexample. The
+    non-vacuity check (a catch-all rule is reachable when no explicit rule
+    exists) is asserted in the tests.
     """
     def bad(steps):
         return [And(st["effective"], st["catch_all"], st["has_explicit"]) for st in steps]
-    return _prove(n, bad)
+    return _prove(n, bad, gate=gate)
 
 
 def emergency_shortcut(n=4):

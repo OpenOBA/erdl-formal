@@ -1,0 +1,9 @@
+test(resolution-smt): add mutation testing for catch-all property
+
+catch_all_inert_when_explicit was UNSAT-by-construction (the gate is embedded
+as catch_all_ok), so it restated the restriction instead of detecting it.
+
+- ResolutionFold: add gate param (global/none/invert/same_ring/same_priority)
+- catch_all_inert_when_explicit / _prove: accept gate for mutation testing
+- tests: each broken gate must be killed (SAT counterexample) and the recovered
+  counterexample must replay clean under the intact global gate

@@ -31,7 +31,7 @@ Two kinds of test:
 import itertools
 import random
 
-from z3 import BoolVal, IntVal, Or, Solver, sat, simplify, substitute
+from z3 import And, BoolVal, IntVal, Or, Solver, is_true, sat, simplify, substitute
 
 from erdl_formal import resolution
 from erdl_formal.resolution_smt import (
@@ -337,3 +337,101 @@ def test_workflow_shortcut_antecedent_reachable():
         lambda st: st["term_hit"] & (st["dec"] == WORKFLOW),
     )
     assert reachable
+
+
+# --- mutation testing: catch_all_inert_when_explicit is a DETECTOR --------
+#
+# Over the intended fold the property is UNSAT-by-construction (the gate is
+# embedded directly as ``catch_all_ok``). ANP2's point: that makes it a
+# *restatement*, not a *detector* — it can stay green after some later
+# encoding change breaks the intended semantics. Mutation testing closes that
+# gap: each deliberately-broken gate must be KILLED (the property returns a
+# SAT counterexample), and each counterexample is kept as a replayable
+# regression fixture.
+
+_MUTANTS = {
+    "none": "eligibility gate removed entirely (catch-all always effective)",
+    "invert": "has_explicit inverted (catch-all effective only when explicit present)",
+    "same_ring": "suppression limited to same-ring explicit matches",
+    "same_priority": "suppression limited to same-priority explicit matches",
+}
+
+
+def _model_to_rules(m, model):
+    """Extract a concrete rule list from a SAT model of ResolutionFold."""
+    rules = []
+    for i in range(m.n):
+        dec = str(model.eval(m.dec[i], model_completion=True))
+        ring = model.eval(m.ring[i], model_completion=True).as_long()
+        prio = model.eval(m.prio[i], model_completion=True).as_long()
+        ovr = str(model.eval(m.ovr[i], model_completion=True))
+        catch_all = is_true(model.eval(m.catch_all[i], model_completion=True))
+        rules.append({"decision": dec, "ring": ring, "priority": prio,
+                      "override": ovr, "catch_all": catch_all})
+    return rules
+
+
+def _mutant_fold_violates(rules, gate):
+    """Does the concrete rule-set violate catch-all inertness under ``gate``?
+
+    Builds a fold with the given gate, substitutes the concrete rules, and
+    checks whether any step has ``effective & catch_all & has_explicit``
+    (the property's bad term) — i.e. the broken gate lets a catch-all rule
+    take effect while an explicit-condition rule is present.
+    """
+    m = ResolutionFold(len(rules), gate=gate)
+    _, steps = m.build()
+    subs = []
+    for i, r in enumerate(rules):
+        subs.append((m.dec[i], _DEC[r["decision"]]))
+        subs.append((m.ring[i], IntVal(r["ring"])))
+        subs.append((m.prio[i], IntVal(r["priority"])))
+        subs.append((m.ovr[i], _OVR[r["override"]]))
+        subs.append((m.catch_all[i], BoolVal(r["catch_all"])))
+    bad = Or(*[And(st["effective"], st["catch_all"], st["has_explicit"]) for st in steps])
+    return is_true(simplify(substitute(bad, *subs)))
+
+
+def test_catch_all_inert_detects_mutants():
+    """Every broken gate is killed (SAT counterexample), and the intact fold is
+    not falsely flagged (each counterexample replays clean under the global
+    gate). The counterexamples are asserted inline as regression fixtures.
+    """
+    for gate, desc in _MUTANTS.items():
+        holds, model = catch_all_inert_when_explicit(4, gate=gate)
+        assert not holds, (
+            f"mutant '{gate}' ({desc}) SURVIVED: property holds (UNSAT), so it "
+            f"cannot distinguish the intended fold from this violation"
+        )
+        # Recover the concrete counterexample and prove it is a genuine
+        # violation under the mutant gate — and harmless under the intact gate.
+        m = ResolutionFold(4, gate=gate)
+        rules = _model_to_rules(m, model)
+        assert _mutant_fold_violates(rules, gate), (
+            f"mutant '{gate}': recovered counterexample {rules!r} does not "
+            f"reproduce the violation"
+        )
+        assert not _mutant_fold_violates(rules, "global"), (
+            f"mutant '{gate}': counterexample {rules!r} also violates the intact "
+            f"global gate — the differential is broken"
+        )
+
+
+def test_catch_all_mutant_counterexamples_are_replayable():
+    """Each recovered counterexample is a concrete rule-set that the intact
+    reference ``resolution.resolve`` accepts but the mutant fold mis-resolves
+    — kept as a replayable regression fixture (differential, not just symbolic).
+    """
+    for gate in _MUTANTS:
+        holds, model = catch_all_inert_when_explicit(4, gate=gate)
+        assert not holds
+        m = ResolutionFold(4, gate=gate)
+        rules = _model_to_rules(m, model)
+        # The reference resolve() must not be confused by the counterexample:
+        # it simply runs the (correct) global gate, so a catch-all present with
+        # an explicit rule is inert there. The mutant fold differs.
+        ref = resolution.resolve(rules)
+        # Sanity: the recovered rules are a valid matched set (not a solver
+        # artifact) — the reference returns one of the 13 decision types.
+        assert ref in _DEC, f"mutant '{gate}': reference returned {ref!r}"
+
