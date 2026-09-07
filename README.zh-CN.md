@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.19-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+[![Version](https://img.shields.io/badge/version-v0.1.20-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 > 🚀 **欢迎 POC** —— 欢迎你在自己的环境中试用本项目概念验证。需要技术支持？随时联系 [support@openoba.com](mailto:support@openoba.com)。
 
@@ -174,6 +174,8 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 - **catch-all 放松方向缺口**（v0.1.17）——空条件 ALLOW 能跨 ring 改写显式 DENY，且放松方向无性质看管。
 
 每一处都从「spec/引擎/性质缺口」推进到「修复 + 测试 + 证明」。项目因之更锋利。
+
+**RavindraAnnam**（[github.com/RavindraAnnam](https://github.com/RavindraAnnam)）对照 SPEC §7.1 文本审阅了 `resolution_smt.py` 与 `test_resolution_smt.py`，并磨利了保证边界：裁决性质是在每个受检基数（n ∈ {2,3,4}）上证明 UNSAT，而非对任意规则集长度成立——现在的措辞正是如此精确地陈述，是一个「有界穷举证明」而非「无界宣称」。这种精确，正是保证边界可被独立审计的关键。
 
 ## 贡献与安全
 

@@ -28,7 +28,7 @@ sat / unsat + 反例 → 回放真实引擎交叉验证（replay/）
 | `compiler.py` | S-expression → Z3 TVL 编译器 | tvl, quantifiers, calendar, field_contracts |
 | `properties.py` | 性质验证（可满足性 + 反例）| compiler |
 | `resolution.py` | 规则裁决参考模型（§7.1）| — |
-| `resolution_smt.py` | 裁决层 SMT 全量证明（§7.1 五条性质）| z3 |
+| `resolution_smt.py` | 裁决层 SMT 全量证明（§7.1 七条性质）| z3 |
 
 **依赖方向**：`compiler` → `tvl/quantifiers/calendar/field_contracts`；`properties` → `compiler`；`resolution` / `resolution_smt` 独立。
 
@@ -125,7 +125,7 @@ def disjoint(a_expr, b_expr, schema):
 | compiler | `CompileContext/compile_expr` | S-expression → Z3 |
 | properties | `can_fire/always_denies/subsumes/equivalent/disjoint` | 性质验证 |
 | resolution | `resolve` | 裁决（§7.1 ring/override/catch-all）|
-| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/catch_all_inert_when_explicit/emergency_shortcut/workflow_shortcut` | 裁决层 SMT 全量证明 |
+| resolution_smt | `ResolutionFold` `override_soundness/ring_respect/catch_all_inert_when_explicit/catch_all_then_irrelevant_when_explicit/catch_all_override_irrelevant_when_explicit/emergency_shortcut/workflow_shortcut` | 裁决层 SMT 全量证明 |
 
 ---
 

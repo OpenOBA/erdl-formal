@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.20] - 2026-09-07
+
+### Added
+- **`catch_all_inert_when_explicit` 变异测试**：`ResolutionFold` 新增 `gate` 参数（`global` + 4 个变异体 `none`/`invert`/`same_ring`/`same_priority`），证明该性质是「探测器」而非对 fold 内嵌门的「重述」——每个被破坏的门都产生 SAT 反例，并作为回归 fixture 回放。
+- **`catch_all_then_irrelevant_when_explicit`**：§7.1 第 6 条改用 SPEC 自身的决策观察量重述——存在显式规则时，catch-all 的 `then` 值对最终决策无关（反事实，独立于 fold 内部的 `effective` 标志）。
+- **`catch_all_override_irrelevant_when_explicit`**：§7.1.6 的第二个量词——catch-all 的 `override` 值同样对最终决策无关（由逐量词机械提取暴露）。
+- **义务映射表**（`docs/obligation-map.md` / `.en.md`）：每条 §7.1 / §7.0.2 义务映射到其证明属性，缺口显式列出。
+- **§7.1.5b 能力可达性**：跨 ring 与同 ring 的 override ALLOW 覆盖 DENY 的非空真测试（`override_soundness` 未断言的肯定半边）。
+
+### Changed
+- **有界证明措辞**：`_prove` / 模块 docstring、README、CHANGELOG 现明确陈述裁决性质在基数 n∈{2,3,4} 上证明 UNSAT——是有界穷举证明，而非对任意长度的无界宣称（无归纳/padding 论证）。
+
+### Fixed
+- **README / DEVELOPER-GUIDE 漂移**：属性清单与 API 表从过时的 `catch_all_neutral`（已删除）更新为现行的七条裁决性质；§7.1 性质数从五条更正为七条。
+
 ## [0.1.19] - 2026-09-06
 
 ### Fixed

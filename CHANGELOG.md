@@ -5,6 +5,21 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.20] - 2026-09-07
+
+### Added
+- **Mutation testing for `catch_all_inert_when_explicit`**: `ResolutionFold` gains a `gate` parameter (`global` + 4 mutants `none`/`invert`/`same_ring`/`same_priority`), proving the property is a detector rather than a restatement of the gate embedded in the fold — each broken gate yields a SAT counterexample, replayed as a regression fixture.
+- **`catch_all_then_irrelevant_when_explicit`**: §7.1 item 6 restated over the SPEC's own decision observable — a catch-all's `then` value is irrelevant to the final decision when an explicit rule is present (counterfactual, independent of the fold's internal `effective` flag).
+- **`catch_all_override_irrelevant_when_explicit`**: the second §7.1.6 quantifier — a catch-all's `override` value is likewise irrelevant to the final decision (surfaced by mechanical per-quantifier extraction).
+- **Obligation map** (`docs/obligation-map.md` / `.en.md`): every §7.1 / §7.0.2 obligation mapped to its proving property, with gaps listed explicitly.
+- **§7.1.5b capability reachability**: non-vacuity tests for the cross-ring and same-ring override ALLOW covering a DENY (the positive half `override_soundness` does not assert).
+
+### Changed
+- **Bounded-proof wording**: `_prove` / module docstring, README, and CHANGELOG now state that resolution properties are proven UNSAT at cardinalities n∈{2,3,4} — a bounded exhaustive proof, not an unbounded claim over arbitrary length (no induction/padding argument exists).
+
+### Fixed
+- **README / DEVELOPER-GUIDE drift**: property list and API table updated from the stale `catch_all_neutral` (removed) to the current seven resolution properties; §7.1 count corrected from five to seven.
+
 ## [0.1.19] - 2026-09-06
 
 ### Fixed

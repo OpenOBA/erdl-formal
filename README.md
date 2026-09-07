@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.19-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+[![Version](https://img.shields.io/badge/version-v0.1.20-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 > 🚀 **POC welcome** — we encourage you to try this project as a proof of concept in your own environment. For technical support, contact us anytime at [support@openoba.com](mailto:support@openoba.com).
 
@@ -72,9 +72,12 @@ No test cases. No sampling. Z3 searches the space of **all integers** for an inp
 | override-soundness | overrides go DENY→ALLOW only (never toward a less-safe state) | **ERDL-specific** |
 | ring-respect | a higher-ring DENY overrides a lower-ring ALLOW (ring order honored in the DENY direction) | **ERDL-specific** |
 | emergency-shortcut | EMERGENCY_HALT short-circuits the moment it fires | **ERDL-specific** |
-| catch-all-neutral | a catch-all (empty-condition) rule never rewrites an established decision, in either direction (EMERGENCY_HALT excepted) | **ERDL-specific** |
+| workflow-shortcut | WORKFLOW short-circuits into its state machine the moment it fires | **ERDL-specific** |
+| catch-all-inert-when-explicit | a catch-all (empty-condition) rule never takes effect when an explicit-condition rule is present | **ERDL-specific** |
+| catch-all-then-irrelevant | a catch-all's `then` value is irrelevant to the final decision when an explicit rule is present | **ERDL-specific** |
+| catch-all-override-irrelevant | a catch-all's `override` value is irrelevant to the final decision when an explicit rule is present | **ERDL-specific** |
 
-Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **every rule-set of exactly n modeled positions** (a bounded exhaustive proof at cardinalities n∈{2,3,4}, not sampling — but also not an unbounded proof over arbitrary length). Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
+Expression-layer properties (`always_denies` / `subsumes` / …) are proven by writing the negation as constraints and checking UNSAT; the ERDL-specific resolution properties (`override_soundness` / `ring_respect` / `emergency_shortcut` / `workflow_shortcut` / `catch_all_inert_when_explicit` / `catch_all_then_irrelevant_when_explicit` / `catch_all_override_irrelevant_when_explicit`) are encoded in `resolution_smt.py`, which compiles `resolve()`'s ring / override / priority ordering into Z3 constraints and proves them UNSAT over **every rule-set of exactly n modeled positions** (a bounded exhaustive proof at cardinalities n∈{2,3,4}, not sampling — but also not an unbounded proof over arbitrary length). Any SAT counterexample is a concrete rule-set replayed against the real engine — proof plus differential testing, double insurance.
 
 ## 34/34 nodes, E2/E8/E10/E11/E12 evaluation semantics
 
@@ -166,7 +169,7 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 ## Acknowledgments
 
 The resolution-layer properties (`override_soundness` / `ring_respect` /
-`emergency_shortcut` / `catch_all_neutral`) were shaped in part by external
+`emergency_shortcut` / `catch_all_inert_when_explicit`) were shaped in part by external
 review. In particular, **ANP2 Network** ([dev.to/anp2network](https://dev.to/anp2network))
 provided two rounds of precise, reproducible review of the resolution
 semantics, across three concrete findings, each identifying a boundary in
@@ -182,6 +185,14 @@ the kernel:
 
 Each finding moved from a spec/engine/property gap to a fix, a test, and
 a proof. The project is sharper for it.
+
+**RavindraAnnam** ([github.com/RavindraAnnam](https://github.com/RavindraAnnam))
+reviewed `resolution_smt.py` and `test_resolution_smt.py` against the SPEC
+§7.1 text, and sharpened the assurance boundary: the resolution properties
+are proven UNSAT at each checked cardinality (n ∈ {2,3,4}), not over
+arbitrary rule-set length, and the wording now states exactly that — a
+bounded exhaustive proof rather than an unbounded claim. That precision is
+what makes the assurance boundary independently auditable.
 
 ## Contributing & security
 
