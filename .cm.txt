@@ -1,6 +1,0 @@
-fix(ci): generate V-ENGINE answers before vector cross-check
-
-The crosscheck job clones erdl-vectors fresh, but v-engine-answers.json is
-gitignored (ER9 oracle isolation), so crosscheck-vectors.py and
-crosscheck-calendar.py failed with FileNotFoundError. Generate the answers
-in CI (npm ci + generate:vengine) before the vector cross-check step.
