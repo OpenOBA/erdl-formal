@@ -5,7 +5,7 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-09-10
+## [0.1.21] - 2026-09-10
 
 ### Added
 - **Small-model evidence experiments** (`replay/small-model-experiment.py`, `replay/witness-shrink.py`, `replay/independence.py`): the resolution harness holds UNSAT at n=5 and n=6 (not just {2,3,4}); every gate-mutant counterexample at n=6 greedily shrinks to 2 rules; and a precise satisfy-one-violate-other matrix shows `none`↔`invert` are mutually-subsuming (no independence signal) while `same_ring`/`same_priority` are distinguishable from everything else. This is **evidence**, not proof — the open item is the induction that would turn the "≤2-rule witness" claim into a small-model theorem.
