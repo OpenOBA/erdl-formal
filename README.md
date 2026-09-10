@@ -194,6 +194,16 @@ arbitrary rule-set length, and the wording now states exactly that — a
 bounded exhaustive proof rather than an unbounded claim. That precision is
 what makes the assurance boundary independently auditable.
 
+A follow-up pushed that boundary one step further with **small-model evidence
+(not proof)**: the harness also holds UNSAT at n=5 and n=6, and every
+gate-mutant counterexample at n=6 greedily shrinks to **2 rules** — evidence
+that the interesting witnesses live at cardinality ≤2, inside the
+exhaustively-checked region. The named open item is the induction that would
+turn the "≤2-rule witness" claim into a genuine small-model theorem; until
+then the assurance remains bounded. Reproducible under
+`replay/small-model-experiment.py`, `replay/witness-shrink.py`, and
+`replay/independence.py`.
+
 ## Contributing & security
 
 - `CONTRIBUTING.md` — contribution process (issue-first, review)

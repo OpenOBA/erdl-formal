@@ -29,6 +29,15 @@ arbitrary rule-set length — this is a bounded, not an unbounded, assurance.
 Any SAT counterexample is a concrete, replayable rule-set that can be fed back
 into the real engine for cross-validation.
 
+**Small-model evidence (not proof)**: the harness was also pushed to n=5 and
+n=6 (all properties remain UNSAT), and every gate-mutant counterexample at n=6
+greedily shrinks to **2 rules** — evidence that the interesting witnesses live
+at cardinality ≤2, well inside the exhaustively-checked region. The open item
+is the induction that would turn the "≤2-rule witness" claim into a genuine
+small-model theorem; until then this remains a bounded assurance. See
+``replay/small-model-experiment.py``, ``replay/witness-shrink.py`` and
+``replay/independence.py`` for the reproducible experiments.
+
 Faithfulness (no divergence between this Z3 model and the reference) is
 guaranteed by ``tests/test_resolution_smt.py``, which exhaustively cross-checks
 the Z3 fold against ``resolution.resolve`` over a finite rule-set space

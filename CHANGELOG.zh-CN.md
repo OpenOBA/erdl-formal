@@ -5,6 +5,14 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] - 2026-09-10
+
+### Added
+- **Small-model 证据实验**（`replay/small-model-experiment.py`、`replay/witness-shrink.py`、`replay/independence.py`）：裁决 harness 在 n=5 和 n=6 也保持 UNSAT（不止 {2,3,4}）；每个 gate 变异体在 n=6 的反例贪心缩减到 2 条规则；精确的 satisfy-one-violate-other 矩阵显示 `none`↔`invert` 互相蕴含（无独立性信号），而 `same_ring`/`same_priority` 与其他所有均可区分。这是**证据**而非证明——待办是把「≤2-rule witness」声明转化为 small-model 定理的归纳。
+
+### Changed
+- `resolution_smt.py` 文档字符串与 `README.md`：保证边界现在写明 small-model 证据（n=5/6 UNSAT + witness≤2）并显式命名归纳为待办，而不是让「bounded proof」读起来比实际更强。
+
 ## [0.1.20] - 2026-09-07
 
 ### Added

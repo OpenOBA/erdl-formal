@@ -177,6 +177,8 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 **RavindraAnnam**（[github.com/RavindraAnnam](https://github.com/RavindraAnnam)）对照 SPEC §7.1 文本审阅了 `resolution_smt.py` 与 `test_resolution_smt.py`，并磨利了保证边界：裁决性质是在每个受检基数（n ∈ {2,3,4}）上证明 UNSAT，而非对任意规则集长度成立——现在的措辞正是如此精确地陈述，是一个「有界穷举证明」而非「无界宣称」。这种精确，正是保证边界可被独立审计的关键。
 
+后续一次追问把这条边界再推进一步，补充了 **small-model 证据（非证明）**：harness 在 n=5 与 n=6 也保持 UNSAT，且每个 gate 变异体在 n=6 的反例贪心缩减到 **2 条规则**——这是「有意义的 witness 存在于基数 ≤2」的证据，落在穷举覆盖区内。被显式命名的待办是：把「≤2-rule witness」声明转化为真正 small-model 定理的归纳；在此之前保证仍是有界的。实验可复现于 `replay/small-model-experiment.py`、`replay/witness-shrink.py`、`replay/independence.py`。
+
 ## 贡献与安全
 
 - `CONTRIBUTING.md` — 贡献流程（先 issue 后 PR / review）
