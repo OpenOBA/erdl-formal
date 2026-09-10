@@ -153,7 +153,7 @@ for v in vectors:
 
 - 每个模块一个 `test_*.py`，覆盖「正常 / 边界 / Missing / 异常」。
 - 交叉验证放 `replay/`（不是 `tests/`，因依赖 erdl-vectors 冻结向量）。
-- 跑全量：`python -m pytest -q`（当前 249 全绿）。
+- 跑全量：`python -m pytest -q`（当前 257 全绿）。
 
 ---
 

@@ -153,7 +153,7 @@ for v in vectors:
 
 - One `test_*.py` per module, covering "normal / boundary / Missing / exception".
 - Cross-checks live in `replay/` (not `tests/`, because they depend on erdl-vectors frozen vectors).
-- Run everything: `python -m pytest -q` (currently 249 passing).
+- Run everything: `python -m pytest -q` (currently 257 passing).
 
 ---
 
