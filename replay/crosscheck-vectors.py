@@ -84,8 +84,8 @@ def main():
         if v["scenario"] not in ("normal", "boundary"):
             continue
         exp = answers.get(v["id"])
-        if exp["errored"] or exp["value_type"] != "rational":
-            continue  # only clean rational results (not type_mismatch/div-by-zero)
+        if exp["errored"] or exp["value_type"] != "number":
+            continue  # only clean numeric results (not type_mismatch/div-by-zero)
 
         got = eval_expr(v["expr_tree"])
         if got is None:

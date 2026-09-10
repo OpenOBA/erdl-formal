@@ -65,7 +65,9 @@ def main():
                 unit, arg = expr["date_part"]["unit"], expr["date_part"]["arg"]
                 if not isinstance(arg, str):
                     continue
-                got = _v(tvl_date_part(unit, str_def(arg)))
+                # value_type "number": value is a decimal string; _v() returns an int.
+                # Serialize the int back to a minimal decimal string for equality.
+                got = str(_v(tvl_date_part(unit, str_def(arg))))
                 expected = exp["value"]
             elif node == "month_last_day":
                 arg = expr["month_last_day"]
