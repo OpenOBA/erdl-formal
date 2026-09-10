@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.22] - 2026-09-10
+
+### Fixed
+- **跨仓对拍 number 编码漂移**：`replay/crosscheck-vectors.py` 按过时的 `rational` 值类型过滤，导致所有算术向量被跳过（0/0 一致）；`replay/crosscheck-calendar.py` 把 `date_part` 的整数与 decimal-string 值直接比较（误报 `got 2026 expected 2026`）。两者现在对齐 ERDL 表达层 ER4：`value_type` 为 `number`、`value` 为 decimal string，按 scale-14 定点数值相等比较（尾零不敏感）。
+
 ## [0.1.21] - 2026-09-10
 
 ### Added
