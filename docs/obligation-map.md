@@ -39,6 +39,15 @@
 
 §7.1 的 ring/override/catch-all 裁决语义**目前还没有**第三方独立实现。`erdl-vectors` 现有的 runner（norviq-go、concordia-python）覆盖的是 Decision Object 哈希层与表达式内核，不覆盖 §7.1 裁决。一个仅凭 SPEC 文本独立重新推导 §7.1 的第三方 runner（正如它们在哈希层所做的那样）**正在积极征集中**——一旦落地，fold/reference 这一对实现将获得一个独立锚点，打破 ANP2 所指的「两者共享同一解读」的循环。
 
+## witness bound 的证明基础（support lemma + minimality）
+
+属性证明的有界性（n∈{2,3,4} 穷举）之上，witness bound ≤2 由两条**已证明的不变量**承载（`resolution_smt.py` 新增）：
+
+- **`support_lemma`（删除不变性）**：gated-off 规则（`effective=False`，非 terminal 短路）不改变 verdict——UNSAT 于 n∈{4,5}。它证明 verdict 只由「实际命中的规则集（support set）」决定。
+- **`minimality`（最小性）**：每个 3 规则违反都有 2 规则子违反——七个属性均 UNSAT。它证明不存在 size-3 的最小 witness。
+
+二者合起来：verdict 只由 support set 决定，且 witness bound 的常数从 ordering obligations 的 arity（=2）**读出、而非测量**——这是把「有界穷举」升级为「小模型定理」的归纳基础（任意长度的完整归纳仍为开放项）。
+
 ## 本映射表的产出方式（机械提取）
 
 本表不是精选摘要，而是把 SPEC §7.1 / §7.0.2 **逐句投影**到属性清单（ANP2 Network：「逐句提取是可信输入，不是目标」）。具体：

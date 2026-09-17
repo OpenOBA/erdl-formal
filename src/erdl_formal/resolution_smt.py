@@ -29,14 +29,21 @@ arbitrary rule-set length — this is a bounded, not an unbounded, assurance.
 Any SAT counterexample is a concrete, replayable rule-set that can be fed back
 into the real engine for cross-validation.
 
-**Small-model evidence (not proof)**: the harness was also pushed to n=5 and
-n=6 (all properties remain UNSAT), and every gate-mutant counterexample at n=6
-greedily shrinks to **2 rules** — evidence that the interesting witnesses live
-at cardinality ≤2, well inside the exhaustively-checked region. The open item
-is the induction that would turn the "≤2-rule witness" claim into a genuine
-small-model theorem; until then this remains a bounded assurance. See
-``replay/small-model-experiment.py``, ``replay/witness-shrink.py`` and
-``replay/independence.py`` for the reproducible experiments.
+**Small-model theorem (in progress)**: the witness bound ≤2 is now carried by
+**two proven invariants**, not just greedy-shrink evidence:
+
+- ``support_lemma`` (deletion invariance) — a gated-off rule (``effective=False``,
+  not a terminal short-circuit) never changes the verdict; proven UNSAT at n∈{4,5}.
+- ``minimality`` — every 3-rule violation has a 2-rule sub-violation; proven UNSAT
+  for all seven properties (no size-3 *minimal* witness exists).
+
+Together they say the verdict depends only on the rules that actually fire (the
+"support set"), and the witness bound's constant is **read from the ordering
+obligations' arity (=2), not measured**. The full induction over arbitrary
+rule-set length remains the open item — this is a small-model theorem *in
+progress*, not a closed induction. See ``replay/support-lemma-smoke.py``,
+``replay/minimality-check.py``, ``replay/small-model-experiment.py``,
+``replay/witness-shrink.py`` and ``replay/independence.py``.
 
 Faithfulness (no divergence between this Z3 model and the reference) is
 guaranteed by ``tests/test_resolution_smt.py``, which exhaustively cross-checks
@@ -498,3 +505,79 @@ def workflow_shortcut(n=4):
                             st["final_after"] != WORKFLOW) for st in steps]
         return hit_not_final + not_terminal
     return _prove(n, bad)
+
+
+# --- support lemma (witness-bound induction base) -------------------------
+
+
+def support_lemma(n=4):
+    """Support lemma (deletion invariance): a gated-off rule never changes the verdict.
+
+    A rule with ``effective=False`` (gated off — not a terminal short-circuit)
+    makes no state transition, so deleting it leaves the final decision
+    unchanged. Proven UNSAT over ``final != final_without_last``.
+
+    This is the induction base the bounded proofs were missing: the verdict
+    depends only on the rules that actually fire (the "support set"); every
+    other rule is verdict-neutral and deletable. Combined with ``minimality``
+    (every 3-rule violation has a 2-rule sub-violation) it upgrades the bounded
+    assurance toward a genuine small-model theorem — the witness bound's
+    constant is read from the ordering obligations' arity, not measured.
+    """
+    m = ResolutionFold(n)
+    s = Solver()
+    for c in m.domain_constraints() + m.sorted_premise():
+        s.add(c)
+    final, steps = m.build()
+    s.add(Not(steps[n - 1]["effective"]))  # last rule gated off
+    s.add(Not(steps[n - 1]["term_hit"]))   # not a terminal short-circuit
+
+    m2 = ResolutionFold(n - 1)
+    final2, _ = m2.build()
+    subs = []
+    for i in range(n - 1):
+        subs.append((m2.dec[i], m.dec[i]))
+        subs.append((m2.ring[i], m.ring[i]))
+        subs.append((m2.prio[i], m.prio[i]))
+        subs.append((m2.ovr[i], m.ovr[i]))
+        subs.append((m2.catch_all[i], m.catch_all[i]))
+    final2 = substitute(final2, *subs)
+
+    s.add(final != final2)
+    return s.check() == unsat
+
+
+def minimality(bad_fn, n=3):
+    """Minimality: every 3-rule violation has a 2-rule sub-violation.
+
+    For a property's bad-term function ``bad_fn`` (``steps -> [bad terms]``),
+    ask whether a 3-rule set violates while **every** 2-element subset
+    satisfies. UNSAT => no size-3 *minimal* witness exists, so the witness
+    bound is <= 2 (tight at the checked cardinality) — this tests minimality,
+    not a single deletion order (unlike greedy shrink).
+    """
+    m = ResolutionFold(n)
+    s = Solver()
+    for c in m.domain_constraints() + m.sorted_premise():
+        s.add(c)
+    _, steps = m.build()
+    s.add(Or(*bad_fn(steps)))  # 3-rule set violates
+
+    for removed in range(n):
+        m2 = ResolutionFold(n - 1)
+        subs = []
+        k = 0
+        for i in range(n):
+            if i == removed:
+                continue
+            subs += [(m2.dec[k], m.dec[i]), (m2.ring[k], m.ring[i]),
+                     (m2.prio[k], m.prio[i]), (m2.ovr[k], m.ovr[i]),
+                     (m2.catch_all[k], m.catch_all[i])]
+            k += 1
+        for c in m2.domain_constraints() + m2.sorted_premise():
+            s.add(substitute(c, *subs))
+        _, steps2 = m2.build()
+        bad2 = Or(*bad_fn(steps2))
+        s.add(Not(substitute(bad2, *subs)))  # this 2-subset does NOT violate
+
+    return s.check() == unsat

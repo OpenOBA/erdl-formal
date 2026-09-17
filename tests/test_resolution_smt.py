@@ -512,3 +512,42 @@ def test_catch_all_mutant_counterexamples_are_replayable():
         # artifact) — the reference returns one of the 13 decision types.
         assert ref in _DEC, f"mutant '{gate}': reference returned {ref!r}"
 
+
+def test_support_lemma_deletion_invariance():
+    """Support lemma: a gated-off rule never changes the verdict (UNSAT at n∈{4,5})."""
+    from erdl_formal.resolution_smt import support_lemma
+    assert support_lemma(4), "n=4: a gated-off rule changes the verdict"
+    assert support_lemma(5), "n=5: a gated-off rule changes the verdict"
+
+
+def test_minimality_witness_bound_two():
+    """Minimality: every 3-rule violation has a 2-rule sub-violation (bound ≤2)."""
+    from z3 import And, Not
+    from erdl_formal.resolution_smt import (
+        ALLOW, DENY, EMERGENCY_HALT, WORKFLOW, minimality,
+    )
+    bad_fns = {
+        "override_soundness": lambda st: [
+            And(st["effective"], st["has_before"], st["dec"] == DENY, st["enables"],
+                st["final_before"] == ALLOW, st["final_ring_before"] == st["ring"],
+                st["final_after"] == DENY) for st in st],
+        "ring_respect": lambda st: [
+            And(st["effective"], st["has_before"], st["dec"] == DENY, Not(st["catch_all"]),
+                st["final_before"] == ALLOW, st["ring"] > st["final_ring_before"],
+                st["final_after"] != DENY) for st in st],
+        "catch_all_inert": lambda st: [
+            And(st["effective"], st["catch_all"], st["has_explicit"]) for st in st],
+        "emergency_shortcut": lambda st: (
+            [And(st["term_hit"], st["dec"] == EMERGENCY_HALT,
+                 st["final_after"] != EMERGENCY_HALT) for st in st] +
+            [And(st["effective"], st["has_before"], st["final_before"] == EMERGENCY_HALT,
+                 st["final_after"] != EMERGENCY_HALT) for st in st]),
+        "workflow_shortcut": lambda st: (
+            [And(st["term_hit"], st["dec"] == WORKFLOW,
+                 st["final_after"] != WORKFLOW) for st in st] +
+            [And(st["effective"], st["has_before"], st["final_before"] == WORKFLOW,
+                 st["final_after"] != WORKFLOW) for st in st]),
+    }
+    for name, bad_fn in bad_fns.items():
+        assert minimality(bad_fn, 3), f"{name}: a size-3 minimal witness exists (bound > 2)"
+
