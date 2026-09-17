@@ -33,7 +33,8 @@ into the real engine for cross-validation.
 **two proven invariants**, not just greedy-shrink evidence:
 
 - ``support_lemma`` (deletion invariance) — a gated-off rule (``effective=False``,
-  not a terminal short-circuit) never changes the verdict; proven UNSAT at n∈{4,5}.
+  not a terminal short-circuit) never changes the verdict at ANY sorted position;
+  proven UNSAT at n∈{4,5} across every position j.
 - ``minimality`` — every 3-rule violation has a 2-rule sub-violation; proven UNSAT
   for all seven properties (no size-3 *minimal* witness exists).
 
@@ -511,40 +512,50 @@ def workflow_shortcut(n=4):
 
 
 def support_lemma(n=4):
-    """Support lemma (deletion invariance): a gated-off rule never changes the verdict.
+    """Support lemma (deletion invariance): a gated-off rule at ANY position never changes the verdict.
 
-    A rule with ``effective=False`` (gated off — not a terminal short-circuit)
-    makes no state transition, so deleting it leaves the final decision
-    unchanged. Proven UNSAT over ``final != final_without_last``.
+    For every sorted position ``j``, a rule with ``effective=False`` (gated off
+    — not a terminal short-circuit) makes no state transition, so deleting it
+    (shift the tail left, which preserves sortedness) leaves the final decision
+    unchanged. Proven UNSAT over ``final != final_without_j`` at every j.
 
     This is the induction base the bounded proofs were missing: the verdict
     depends only on the rules that actually fire (the "support set"); every
-    other rule is verdict-neutral and deletable. Combined with ``minimality``
-    (every 3-rule violation has a 2-rule sub-violation) it upgrades the bounded
-    assurance toward a genuine small-model theorem — the witness bound's
-    constant is read from the ordering obligations' arity, not measured.
+    other rule is verdict-neutral and deletable at any position. Combined with
+    ``minimality`` it upgrades the bounded assurance toward a small-model
+    theorem — the witness bound's constant is read from the ordering
+    obligations' arity, not measured.
     """
-    m = ResolutionFold(n)
-    s = Solver()
-    for c in m.domain_constraints() + m.sorted_premise():
-        s.add(c)
-    final, steps = m.build()
-    s.add(Not(steps[n - 1]["effective"]))  # last rule gated off
-    s.add(Not(steps[n - 1]["term_hit"]))   # not a terminal short-circuit
+    for j in range(n):
+        m = ResolutionFold(n)
+        s = Solver()
+        for c in m.domain_constraints() + m.sorted_premise():
+            s.add(c)
+        final, steps = m.build()
+        s.add(Not(steps[j]["effective"]))  # position j gated off
+        s.add(Not(steps[j]["term_hit"]))   # not a terminal short-circuit
 
-    m2 = ResolutionFold(n - 1)
-    final2, _ = m2.build()
-    subs = []
-    for i in range(n - 1):
-        subs.append((m2.dec[i], m.dec[i]))
-        subs.append((m2.ring[i], m.ring[i]))
-        subs.append((m2.prio[i], m.prio[i]))
-        subs.append((m2.ovr[i], m.ovr[i]))
-        subs.append((m2.catch_all[i], m.catch_all[i]))
-    final2 = substitute(final2, *subs)
+        m2 = ResolutionFold(n - 1)
+        subs = []
+        k = 0
+        for i in range(n):
+            if i == j:
+                continue
+            subs.append((m2.dec[k], m.dec[i]))
+            subs.append((m2.ring[k], m.ring[i]))
+            subs.append((m2.prio[k], m.prio[i]))
+            subs.append((m2.ovr[k], m.ovr[i]))
+            subs.append((m2.catch_all[k], m.catch_all[i]))
+            k += 1
+        for c in m2.domain_constraints() + m2.sorted_premise():
+            s.add(substitute(c, *subs))
+        final2, _ = m2.build()
+        final2 = substitute(final2, *subs)
 
-    s.add(final != final2)
-    return s.check() == unsat
+        s.add(final != final2)
+        if s.check() != unsat:
+            return False
+    return True
 
 
 def minimality(bad_fn, n=3):
