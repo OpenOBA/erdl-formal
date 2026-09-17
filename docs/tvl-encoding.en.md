@@ -1,6 +1,6 @@
 # Three-valued logic SMT encoding spec
 
-> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md) §7.2 E11/E12
+> Basis: [erdl-language-spec](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-language-spec-v2.1.en.md) §7.2 E11/E12
 
 ## 1. Encoding carrier
 
