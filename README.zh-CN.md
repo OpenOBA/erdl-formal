@@ -167,17 +167,18 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 ## 鸣谢
 
-裁决层性质（`override_soundness` / `ring_respect` / `emergency_shortcut` / `catch_all_neutral`）在成形过程中受益于外部 review。其中 **ANP2 Network**（[dev.to/anp2network](https://dev.to/anp2network)）对裁决语义做了两轮精确、可复现的 review，指出三处具体边界：
+裁决层性质与其保证边界由外部 review 磨利，按「审阅者 → 贡献 → 效果」记录如下（均可复现于 `replay/`）：
 
-- **字符串/布尔 `eq`/`ne`/`exists`**（v0.1.2）——内核只编译 int 相等/存在，字符串相等直接 `Sort mismatch`；
-- **`always_denies` 的 fail-closed 方向**（v0.1.2）——性质证明的是「静默」而非「fail-closed」，在 ALLOW 兜底下方相反；
+**ANP2 Network**（[dev.to/anp2network](https://dev.to/anp2network)）——对裁决语义的两轮 review，三处发现（每处均闭合为「修复 + 测试 + 证明」）：
+
+- **字符串/布尔 `eq`/`ne`/`exists`**（v0.1.2）——内核只编译 int 相等/存在，字符串相等直接 `Sort mismatch`。
+- **`always_denies` 的 fail-closed 方向**（v0.1.2）——性质证明的是「静默」而非「fail-closed」，在 ALLOW 兜底下方相反。
 - **catch-all 放松方向缺口**（v0.1.17）——空条件 ALLOW 能跨 ring 改写显式 DENY，且放松方向无性质看管。
 
-每一处都从「spec/引擎/性质缺口」推进到「修复 + 测试 + 证明」。项目因之更锋利。
+**RavindraAnnam**（[github.com/RavindraAnnam](https://github.com/RavindraAnnam)）——对照 SPEC §7.1 审阅 `resolution_smt.py` / `test_resolution_smt.py`：
 
-**RavindraAnnam**（[github.com/RavindraAnnam](https://github.com/RavindraAnnam)）对照 SPEC §7.1 文本审阅了 `resolution_smt.py` 与 `test_resolution_smt.py`，并磨利了保证边界：裁决性质是在每个受检基数（n ∈ {2,3,4}）上证明 UNSAT，而非对任意规则集长度成立——现在的措辞正是如此精确地陈述，是一个「有界穷举证明」而非「无界宣称」。这种精确，正是保证边界可被独立审计的关键。
-
-后续一次追问把这条边界转化为 **small-model 定理（进行中）**：两条已证明的不变量现在承载 witness bound ≤2——`support_lemma`（删除不变性：gated-off 规则在任意 sorted 位置删除都不改变 verdict，UNSAT 于 n ∈ {4,5}）与 `minimality`（每个 n 规则违反都有 (n-1) 规则子违反，七个属性 × n ∈ {3,4,5,6} 均 UNSAT）。bound 的常数（=2）从每个属性 bad 条件的结构（≤2 规则）读出、而非贪心缩减测量。开放的最后一公里——结构分析的 Z3 形式化（数据流）与任意长度归纳（n ≥ 7）——已如实标注。实验可复现于 `replay/support-lemma-smoke.py`、`replay/support-lemma-anypos.py`、`replay/minimality-check.py`、`replay/small-model-experiment.py`、`replay/witness-shrink.py`、`replay/independence.py`。
+- **有界穷举措辞**——性质在每个受检基数（n ∈ {2,3,4}）上证明 UNSAT，而非对任意规则集长度成立；措辞现在如此精确陈述（有界穷举证明，非无界宣称）。
+- **witness bound 归纳义务**——点名了把「≤2-rule witness」声明转化为 small-model 定理的归纳；现在由 `support_lemma`（删除不变性，任意 sorted 位置，UNSAT 于 n ∈ {4,5}）+ `minimality`（≤2 到 n=6，七个属性）+ 结构分析（每个 bad 条件只涉及 ≤2 规则）承载，开放的最后一公里（结构分析 Z3 形式化 + 任意长度归纳 n ≥ 7）已如实标注。
 
 ## 贡献与安全
 

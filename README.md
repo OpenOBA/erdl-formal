@@ -168,44 +168,35 @@ python replay/crosscheck-vectors.py  # cross-check against erdl-vectors frozen v
 
 ## Acknowledgments
 
-The resolution-layer properties (`override_soundness` / `ring_respect` /
-`emergency_shortcut` / `catch_all_inert_when_explicit`) were shaped in part by external
-review. In particular, **ANP2 Network** ([dev.to/anp2network](https://dev.to/anp2network))
-provided two rounds of precise, reproducible review of the resolution
-semantics, across three concrete findings, each identifying a boundary in
-the kernel:
+The resolution-layer properties and their assurance boundary were sharpened by
+external review, recorded below as reviewer → contribution → effect (all
+reproducible under `replay/`):
+
+**ANP2 Network** ([dev.to/anp2network](https://dev.to/anp2network)) — two rounds
+of review of the resolution semantics, three findings (each closed as fix +
+test + proof):
 
 - **string/bool `eq`/`ne`/`exists`** (v0.1.2) — the kernel only compiled int
-  equality/existence, raising `Sort mismatch` on string equality;
+  equality/existence, raising `Sort mismatch` on string equality.
 - **`always_denies` fail-closure direction** (v0.1.2) — the property proved
-  silence rather than fail-closure, backwards under an ALLOW fallback;
-- **the catch-all relax-direction gap** (v0.1.17) — a catch-all (empty-
-  condition) ALLOW could rewrite an explicit DENY across rings, and the
-  relax direction had no property watching it.
-
-Each finding moved from a spec/engine/property gap to a fix, a test, and
-a proof. The project is sharper for it.
+  silence rather than fail-closure, backwards under an ALLOW fallback.
+- **catch-all relax-direction gap** (v0.1.17) — a catch-all (empty-condition)
+  ALLOW could rewrite an explicit DENY across rings, with no property watching
+  the relax direction.
 
 **RavindraAnnam** ([github.com/RavindraAnnam](https://github.com/RavindraAnnam))
-reviewed `resolution_smt.py` and `test_resolution_smt.py` against the SPEC
-§7.1 text, and sharpened the assurance boundary: the resolution properties
-are proven UNSAT at each checked cardinality (n ∈ {2,3,4}), not over
-arbitrary rule-set length, and the wording now states exactly that — a
-bounded exhaustive proof rather than an unbounded claim. That precision is
-what makes the assurance boundary independently auditable.
+— reviewed `resolution_smt.py` / `test_resolution_smt.py` against SPEC §7.1:
 
-A follow-up turned that boundary into a **small-model theorem (in progress)**:
-two proven invariants now carry the witness bound ≤2 — `support_lemma`
-(deletion invariance: a gated-off rule never changes the verdict at ANY sorted
-position, UNSAT at n ∈ {4,5}) and `minimality` (every n-rule violation has an
-(n-1)-rule sub-violation, UNSAT at n ∈ {3,4,5,6} for all seven properties).
-The bound's constant (=2) is read from each property's bad-condition structure
-(≤2 rules), not measured by greedy shrink. The open last mile — Z3-formalized
-structural analysis (dataflow) and unbounded induction (n ≥ 7) — is honestly
-marked. Reproducible under `replay/support-lemma-smoke.py`,
-`replay/support-lemma-anypos.py`, `replay/minimality-check.py`,
-`replay/small-model-experiment.py`, `replay/witness-shrink.py`, and
-`replay/independence.py`.
+- **bounded-exhaustive wording** — the properties are proven UNSAT at each
+  checked cardinality (n ∈ {2,3,4}), not over arbitrary rule-set length; the
+  wording now states exactly that (a bounded exhaustive proof, not an unbounded
+  claim).
+- **witness-bound induction obligation** — named the induction that would turn
+  the "≤2-rule witness" claim into a small-model theorem; now carried by
+  `support_lemma` (deletion invariance at any sorted position, UNSAT at n ∈
+  {4,5}) + `minimality` (≤2 to n=6, all seven properties) + structural analysis
+  (each bad condition involves ≤2 rules), with the open last mile — Z3-formalized
+  structural analysis and unbounded induction (n ≥ 7) — honestly marked.
 
 ## Contributing & security
 
