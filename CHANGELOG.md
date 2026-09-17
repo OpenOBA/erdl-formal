@@ -11,9 +11,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`support_lemma` (deletion invariance, any position)**: a gated-off rule (`effective=False`, not a terminal short-circuit) never changes the verdict when deleted at ANY sorted position — proven UNSAT at n ∈ {4,5} across every position j. This is the induction base the bounded proofs were missing: the verdict depends only on the rules that actually fire.
 - **`minimality` (witness bound ≤2)**: every n-rule violation has an (n-1)-rule sub-violation — proven UNSAT for all seven properties at n ∈ {3,4,5,6}. No size-3..6 minimal witness exists, so the witness bound ≤2 is tight to n=6.
 - **Structural analysis** (`docs/obligation-map.md`): each property's bad condition involves ≤2 rules (current rule + prior-state source), which is why the witness-bound constant is 2 — read from structure, not measured.
+- **Expression-kernel mutation testing** (`tests/test_mutation.py`): 20 oracles / 9 mutants / 7 counterexamples as an in-repo pytest suite (oracles hold on the intact verifier / mutants killed / counterexamples match spec).
 
 ### Changed
 - **Bounded → small-model theorem (in progress)**: module docstring, README, and obligation-map now state the witness bound ≤2 is carried by two proven invariants (deletion invariance + minimality), with the constant read from the ordering obligations' arity. The open last mile — Z3-formalized structural analysis (dataflow) and unbounded induction (n ≥ 7) — is honestly marked, not overclaimed.
+
+### Fixed
+- **Spec-rename link drift**: the two remaining `erdl-spec.md` references (docs/tvl-encoding.md body link + field_contracts.py docstring) and the six doc headers now point to `erdl-language-spec-v2.1.md`.
 
 ## [0.1.22] - 2026-09-10
 
