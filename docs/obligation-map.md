@@ -39,14 +39,30 @@
 
 §7.1 的 ring/override/catch-all 裁决语义**目前还没有**第三方独立实现。`erdl-vectors` 现有的 runner（norviq-go、concordia-python）覆盖的是 Decision Object 哈希层与表达式内核，不覆盖 §7.1 裁决。一个仅凭 SPEC 文本独立重新推导 §7.1 的第三方 runner（正如它们在哈希层所做的那样）**正在积极征集中**——一旦落地，fold/reference 这一对实现将获得一个独立锚点，打破 ANP2 所指的「两者共享同一解读」的循环。
 
-## witness bound 的证明基础（support lemma + minimality）
+## witness bound 的证明基础（support lemma + minimality + 结构分析）
 
-属性证明的有界性（n∈{2,3,4} 穷举）之上，witness bound ≤2 由两条**已证明的不变量**承载（`resolution_smt.py` 新增）：
+属性证明的有界性（n∈{2,3,4} 穷举）之上，witness bound ≤2 由两条**已证明的不变量** + 一条**结构分析**承载（`resolution_smt.py` 新增）：
 
-- **`support_lemma`（删除不变性）**：gated-off 规则（`effective=False`，非 terminal 短路）不改变 verdict——UNSAT 于 n∈{4,5}。它证明 verdict 只由「实际命中的规则集（support set）」决定。
-- **`minimality`（最小性）**：每个 3 规则违反都有 2 规则子违反——七个属性均 UNSAT。它证明不存在 size-3 的最小 witness。
+- **`support_lemma`（删除不变性，任意位置）**：gated-off 规则（`effective=False`，非 terminal 短路）在**任意 sorted 位置**删除都不改变 verdict——UNSAT 于 n∈{4,5} 的每个位置 j。它证明 verdict 只由「实际命中的规则集（support set）」决定。
+- **`minimality`（最小性，到 n=6）**：每个 n 规则违反都有 (n-1) 规则子违反——七个属性 × n∈{3,4,5,6} 均 UNSAT。它证明不存在 size-3~6 的最小 witness。
 
-二者合起来：verdict 只由 support set 决定，且 witness bound 的常数从 ordering obligations 的 arity（=2）**读出、而非测量**——这是把「有界穷举」升级为「小模型定理」的归纳基础（任意长度的完整归纳仍为开放项）。
+**结构分析（为什么常数 =2，非硬编码）**——每个 property 的 bad 条件只涉及 ≤2 个规则（当前规则 + 之前状态来源规则），这是 witness bound 常数 =2 的**结构来源**：
+
+| property | bad 涉及的规则 | 数 |
+|---|---|---|
+| override_soundness | 当前 override-DENY + 之前 ALLOW（final_before 来源） | 2 |
+| ring_respect | 当前高 ring DENY + 之前低 ring ALLOW | 2 |
+| catch_all_inert | catch-all + explicit（has_explicit） | 2 |
+| catch_all_then/override_irrelevant | catch-all + explicit | 2 |
+| emergency_shortcut | EMERGENCY_HALT + 后续规则 | 2 |
+| workflow_shortcut | WORKFLOW + 后续规则 | 2 |
+
+所以 witness bound = 2 是从 bad 条件的结构（arity=2）**读出**，而非 greedy shrink 测量；minimality 查询（size 3~6 最小 witness 不存在）是这个结构读出的**机器验证**。
+
+**开放的最后一公里（诚实标注，研究级，对上下游零影响）**：
+
+- **结构分析的 Z3 形式化**：上表是「人工读出」（bad 条件 AST 涉及的规则数），未做「数据流分析」的机器证明。
+- **任意长度归纳**：minimality 验证到 n=6，n≥7 未验证；「witness ≤2 对任意长度」的完整归纳仍是 open item。
 
 ## 本映射表的产出方式（机械提取）
 
