@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.22-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+[![Version](https://img.shields.io/badge/version-v0.2.0-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 > 🚀 **POC welcome** — we encourage you to try this project as a proof of concept in your own environment. For technical support, contact us anytime at [support@openoba.com](mailto:support@openoba.com).
 
@@ -90,7 +90,7 @@ Expression-layer properties (`always_denies` / `subsumes` / …) are proven by w
 
 ## Independent verifier: three-way, byte-for-byte
 
-A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.en.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with [`erdl`](https://www.npmjs.com/package/@openoba/erdl) (the TS engine) and [`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors) (frozen vectors):
+A verifier is only credible if it **never peeks at the examinee's answers**. erdl-formal encodes the spec alone ([`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-language-spec-v2.1.en.md)), with zero dependency on any ERDL engine implementation, forming a three-way independent cross-check with [`erdl`](https://www.npmjs.com/package/@openoba/erdl) (the TS engine) and [`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors) (frozen vectors):
 
 | Cross-check | Pair | Result |
 |---|---|---|
@@ -194,13 +194,16 @@ arbitrary rule-set length, and the wording now states exactly that — a
 bounded exhaustive proof rather than an unbounded claim. That precision is
 what makes the assurance boundary independently auditable.
 
-A follow-up pushed that boundary one step further with **small-model evidence
-(not proof)**: the harness also holds UNSAT at n=5 and n=6, and every
-gate-mutant counterexample at n=6 greedily shrinks to **2 rules** — evidence
-that the interesting witnesses live at cardinality ≤2, inside the
-exhaustively-checked region. The named open item is the induction that would
-turn the "≤2-rule witness" claim into a genuine small-model theorem; until
-then the assurance remains bounded. Reproducible under
+A follow-up turned that boundary into a **small-model theorem (in progress)**:
+two proven invariants now carry the witness bound ≤2 — `support_lemma`
+(deletion invariance: a gated-off rule never changes the verdict at ANY sorted
+position, UNSAT at n ∈ {4,5}) and `minimality` (every n-rule violation has an
+(n-1)-rule sub-violation, UNSAT at n ∈ {3,4,5,6} for all seven properties).
+The bound's constant (=2) is read from each property's bad-condition structure
+(≤2 rules), not measured by greedy shrink. The open last mile — Z3-formalized
+structural analysis (dataflow) and unbounded induction (n ≥ 7) — is honestly
+marked. Reproducible under `replay/support-lemma-smoke.py`,
+`replay/support-lemma-anypos.py`, `replay/minimality-check.py`,
 `replay/small-model-experiment.py`, `replay/witness-shrink.py`, and
 `replay/independence.py`.
 

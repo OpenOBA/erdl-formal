@@ -5,6 +5,16 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-09-17
+
+### Added
+- **`support_lemma`（删除不变性，任意位置）**：gated-off 规则（`effective=False`，非 terminal 短路）在任意 sorted 位置删除都不改变 verdict——UNSAT 于 n ∈ {4,5} 的每个位置 j。这是有界证明缺失的归纳基础：verdict 只取决于实际命中的规则。
+- **`minimality`（witness bound ≤2）**：每个 n 规则违反都有 (n-1) 规则子违反——七个属性 × n ∈ {3,4,5,6} 均 UNSAT。不存在 size-3~6 的最小 witness，因此 witness bound ≤2 到 n=6 是紧的。
+- **结构分析**（`docs/obligation-map.md`）：每个属性的 bad 条件只涉及 ≤2 个规则（当前规则 + 之前状态来源），这正是 witness-bound 常数为 2 的原因——从结构读出，而非测量。
+
+### Changed
+- **有界 → small-model 定理（进行中）**：模块文档字符串、README、obligation-map 现在写明 witness bound ≤2 由两条已证明的不变量（删除不变性 + minimality）承载，常数从 ordering obligations 的 arity 读出。开放的最后一公里——结构分析的 Z3 形式化（数据流）与任意长度归纳（n ≥ 7）——已如实标注，未过度声明。
+
 ## [0.1.22] - 2026-09-10
 
 ### Fixed

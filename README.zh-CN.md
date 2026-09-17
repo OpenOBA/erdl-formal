@@ -1,6 +1,6 @@
 # erdl-formal
 
-[![Version](https://img.shields.io/badge/version-v0.1.22-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
+[![Version](https://img.shields.io/badge/version-v0.2.0-blue)](https://github.com/OpenOBA/erdl-formal/releases) [![License](https://img.shields.io/badge/license-Apache%202.0-green)](LICENSE) [![SMT](https://img.shields.io/badge/verification-SMT_Z3-0082c8)]() [![Kernel](https://img.shields.io/badge/kernel-34_nodes-blueviolet)]() [![Coverage](https://img.shields.io/badge/coverage-34%2F34_nodes-green)]() [![Python](https://img.shields.io/badge/python-3.10%2B-3776AB)]()
 
 > 🚀 **欢迎 POC** —— 欢迎你在自己的环境中试用本项目概念验证。需要技术支持？随时联系 [support@openoba.com](mailto:support@openoba.com)。
 
@@ -86,7 +86,7 @@ assert not always_denies(
 
 ## 独立验证者：三重独立，逐字节对拍
 
-验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-spec.md)）编码，零依赖任何 ERDL 引擎实现，与 [`erdl`](https://www.npmjs.com/package/@openoba/erdl)（TS 引擎）、[`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors)（冻结向量）构成三重独立：
+验证者的可信度来自**不看被验证者的答案**。erdl-formal 只依据规范（[`erdl-language-spec`](https://github.com/OpenOBA/erdl-landing/blob/main/erdl-language-spec-v2.1.md)）编码，零依赖任何 ERDL 引擎实现，与 [`erdl`](https://www.npmjs.com/package/@openoba/erdl)（TS 引擎）、[`erdl-vectors`](https://github.com/OpenOBA/erdl-vectors)（冻结向量）构成三重独立：
 
 | 交叉验证 | 对象 | 结果 |
 |---|---|---|
@@ -177,7 +177,7 @@ python replay/crosscheck-vectors.py  # 与 erdl-vectors 冻结向量对拍
 
 **RavindraAnnam**（[github.com/RavindraAnnam](https://github.com/RavindraAnnam)）对照 SPEC §7.1 文本审阅了 `resolution_smt.py` 与 `test_resolution_smt.py`，并磨利了保证边界：裁决性质是在每个受检基数（n ∈ {2,3,4}）上证明 UNSAT，而非对任意规则集长度成立——现在的措辞正是如此精确地陈述，是一个「有界穷举证明」而非「无界宣称」。这种精确，正是保证边界可被独立审计的关键。
 
-后续一次追问把这条边界再推进一步，补充了 **small-model 证据（非证明）**：harness 在 n=5 与 n=6 也保持 UNSAT，且每个 gate 变异体在 n=6 的反例贪心缩减到 **2 条规则**——这是「有意义的 witness 存在于基数 ≤2」的证据，落在穷举覆盖区内。被显式命名的待办是：把「≤2-rule witness」声明转化为真正 small-model 定理的归纳；在此之前保证仍是有界的。实验可复现于 `replay/small-model-experiment.py`、`replay/witness-shrink.py`、`replay/independence.py`。
+后续一次追问把这条边界转化为 **small-model 定理（进行中）**：两条已证明的不变量现在承载 witness bound ≤2——`support_lemma`（删除不变性：gated-off 规则在任意 sorted 位置删除都不改变 verdict，UNSAT 于 n ∈ {4,5}）与 `minimality`（每个 n 规则违反都有 (n-1) 规则子违反，七个属性 × n ∈ {3,4,5,6} 均 UNSAT）。bound 的常数（=2）从每个属性 bad 条件的结构（≤2 规则）读出、而非贪心缩减测量。开放的最后一公里——结构分析的 Z3 形式化（数据流）与任意长度归纳（n ≥ 7）——已如实标注。实验可复现于 `replay/support-lemma-smoke.py`、`replay/support-lemma-anypos.py`、`replay/minimality-check.py`、`replay/small-model-experiment.py`、`replay/witness-shrink.py`、`replay/independence.py`。
 
 ## 贡献与安全
 
