@@ -85,13 +85,17 @@ def minimality(bad_fn, n=3):
 
 
 def main():
-    n = int(sys.argv[1]) if len(sys.argv) > 1 else 3
-    print(f"=== minimality at n={n} (UNSAT => witness bound <= 2 is tight) ===")
+    n_max = int(sys.argv[1]) if len(sys.argv) > 1 else 6
+    print(f"=== minimality at n=3..{n_max} (UNSAT => no size-n minimal witness) ===")
     for name, bad_fn in BAD.items():
-        t0 = time.time()
-        tight = minimality(bad_fn, n)
-        dt = time.time() - t0
-        print(f"  {name:22s}: {'UNSAT (bound<=2 tight)' if tight else 'SAT (size-3 minimal witness exists)'}  ({dt:.1f}s)")
+        cells = []
+        for n in range(3, n_max + 1):
+            t0 = time.time()
+            tight = minimality(bad_fn, n)
+            dt = time.time() - t0
+            cells.append('U' if tight else 'S')
+            print(f"  {name:22s} n={n}: {'UNSAT (no size-%d minimal witness)' % n if tight else 'SAT (size-%d minimal witness EXISTS)' % n}  ({dt:.1f}s)")
+        print(f"    row: {' '.join(cells)}")
 
 
 if __name__ == "__main__":

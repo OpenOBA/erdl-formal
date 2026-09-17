@@ -549,5 +549,6 @@ def test_minimality_witness_bound_two():
                  st["final_after"] != WORKFLOW) for st in st]),
     }
     for name, bad_fn in bad_fns.items():
-        assert minimality(bad_fn, 3), f"{name}: a size-3 minimal witness exists (bound > 2)"
+        for n in (3, 4, 5, 6):
+            assert minimality(bad_fn, n), f"{name}: a size-{n} minimal witness exists (bound > {n - 1})"
 
