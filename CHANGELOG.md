@@ -5,6 +5,11 @@ All notable changes to this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- **§7.1 resolution**: `override` on a DENY is inert — tightening (DENY/ROLLBACK/QUARANTINE covering an ALLOW) no longer blocked by same-ring override. The `restrictive` branch now tightens unconditionally. `test_override_deny_cannot_tighten_allow` → `test_override_deny_tightens_allow` (ALLOW→DENY).
+
 ## [0.2.0] - 2026-09-17
 
 ### Added
