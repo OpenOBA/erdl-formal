@@ -35,13 +35,13 @@ def test_override_allow_relaxes_deny():
     assert resolve(rules) == "ALLOW"
 
 
-def test_override_deny_cannot_tighten_allow():
-    # Same-ring override DENY after ALLOW is popped (unsafe ALLOW→DENY direction blocked)
+def test_override_deny_tightens_allow():
+    # override on a DENY is inert: same-ring DENY still tightens ALLOW (tightening is default)
     rules = [
         _r("base-allow", "ALLOW", 10, ring=0),
         _r("override-deny", "DENY", 20, ring=0, override="critical"),
     ]
-    assert resolve(rules) == "ALLOW"
+    assert resolve(rules) == "DENY"
 
 
 def test_ring_respect_higher_ring_deny_overrides_lower_allow():

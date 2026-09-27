@@ -120,11 +120,9 @@ def resolve(rules):
                 if final is None or final in RESTRICTIVE_DECISIONS:
                     final, final_ring = d, ring
                 elif final == "ALLOW":
-                    if ring > final_ring or (ring == final_ring and not override_enables(r)):
-                        # higher-ring restrictive, or same-ring non-override restrictive
-                        # → overrides ALLOW
-                        final, final_ring = d, ring
-                    # same-ring override restrictive cannot override ALLOW (unsafe direction)
+                    # tightening (DENY/ROLLBACK/QUARANTINE covering ALLOW) is the default,
+                    # regardless of ring and regardless of override — override only relaxes.
+                    final, final_ring = d, ring
                 # restrictive cannot override EMERGENCY_HALT / WORKFLOW / advisory decisions
                 continue
 
