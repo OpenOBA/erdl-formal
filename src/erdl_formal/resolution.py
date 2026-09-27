@@ -55,7 +55,8 @@ def override_enables(rule):
 
 
 def _override_rank(rule):
-    return _OVERRIDE_RANK.get(rule.get("override"), 4)
+    # Absent override = normal (spec §7.1 item 3 "default normal"), not below-low.
+    return _OVERRIDE_RANK.get(rule.get("override"), 2)
 
 
 def resolve(rules):

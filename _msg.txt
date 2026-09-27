@@ -1,0 +1,4 @@
+fix(resolution): override 缺席排序对齐 spec「默认 normal」（rank 4 → 2）
+
+_override_rank 缺席从 4 → 2（normal），resolution_smt + 测试 _OVR_RANK 同步，
+关闭 erdl-vectors#4 待确认-C。

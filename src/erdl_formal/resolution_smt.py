@@ -110,12 +110,12 @@ def override_enables(ovr):
 
 
 def override_rank(ovr):
-    """Sort tie-break rank: critical=0 … none=4 (matches resolution.py)."""
+    """Sort tie-break rank: critical=0, high=1, normal/none=2, low=3 (absent = normal, spec §7.1 item 3)."""
     return If(
         ovr == OVR_CRITICAL, 0,
         If(ovr == OVR_HIGH, 1,
         If(ovr == OVR_NORMAL, 2,
-        If(ovr == OVR_LOW, 3, 4))))
+        If(ovr == OVR_LOW, 3, 2))))
 
 
 def is_restrictive(dec):

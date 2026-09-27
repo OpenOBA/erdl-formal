@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **§7.1 resolution**: `override` on a DENY is inert — tightening (DENY/ROLLBACK/QUARANTINE covering an ALLOW) no longer blocked by same-ring override. The `restrictive` branch now tightens unconditionally. `test_override_deny_cannot_tighten_allow` → `test_override_deny_tightens_allow` (ALLOW→DENY).
+- **override-absent sort**: absent `override` now sorts as "default normal" (rank 2, spec §7.1 item 3), not below-low (rank 4) — closes erdl-vectors#4 SPEC-REVIEW-C.
 
 ## [0.2.0] - 2026-09-17
 

@@ -85,7 +85,7 @@ _OVR = {
     "low": OVR_LOW,
     "none": OVR_NONE,
 }
-_OVR_RANK = {"critical": 0, "high": 1, "normal": 2, "low": 3, "none": 4}
+_OVR_RANK = {"critical": 0, "high": 1, "normal": 2, "low": 3, "none": 2}
 
 
 def _rule(decision, ring, priority=0, override="none", catch_all=False):
