@@ -281,7 +281,6 @@ class ResolutionFold:
             blocking_set = And(blocking, Or(Not(has), is_restrictive(fin)))
             blocking_tighten = And(
                 blocking, has, fin == ALLOW,
-                Or(ring > fring, And(ring == fring, Not(enables))),
             )
 
             fin_before, fring_before = fin, fring
@@ -355,18 +354,15 @@ def _prove(n, bad_terms, gate="global"):
 
 
 def override_soundness(n=4):
-    """override only relaxes DENY→ALLOW: a same-ring override DENY never tightens ALLOW into DENY.
-
-    The only way a DENY tightens ALLOW is ``ring > final_ring`` (ring order) or
-    ``ring == final_ring and not override_enables`` — so an override-enabled
-    DENY at the SAME ring can never tighten (the "unsafe direction" the
-    reference blocks). The cross-ring case is ring-driven, not override-driven.
+    """override only relaxes DENY→ALLOW; it is inert on a DENY. Tightening
+    (DENY/ROLLBACK/QUARANTINE covering ALLOW) is unconditional — regardless of
+    ring and regardless of override — so a same-ring override DENY still tightens.
     """
     def bad(steps):
         return [And(st["effective"], st["has_before"], st["dec"] == DENY, st["enables"],
                     st["final_before"] == ALLOW,
                     st["final_ring_before"] == st["ring"],
-                    st["final_after"] == DENY) for st in steps]
+                    st["final_after"] != DENY) for st in steps]
     return _prove(n, bad)
 
 

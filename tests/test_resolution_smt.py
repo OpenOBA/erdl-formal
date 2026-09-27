@@ -139,8 +139,9 @@ def _fold_sorted_py(rules):
             if final is None or final in _BLOCKING:
                 final, fring = d, ring
             elif final == "ALLOW":
-                if ring > fring or (ring == fring and not enables):
-                    final, fring = d, ring
+                # tightening is unconditional: any blocking decision covers ALLOW,
+                # regardless of ring and regardless of override (override is inert on a DENY)
+                final, fring = d, ring
             continue
         if final is None:
             final, fring = d, ring
