@@ -22,7 +22,7 @@ const ctx = { flag: true };
 const cases = [
   // --- override / ring / emergency（原有 4 例）---
   ['override ALLOW relaxes DENY', [rule('base-deny', 'DENY', 10, 0), rule('exc-allow', 'ALLOW', 20, 3, 'critical')], 'ALLOW'],
-  ['override DENY cannot tighten ALLOW', [rule('base-allow', 'ALLOW', 10, 0), rule('ovr-deny', 'DENY', 20, 0, 'critical')], 'ALLOW'],
+  ['override DENY tightens ALLOW (override inert)', [rule('base-allow', 'ALLOW', 10, 0), rule('ovr-deny', 'DENY', 20, 0, 'critical')], 'DENY'],
   ['higher-ring DENY overrides lower ALLOW', [rule('lower-allow', 'ALLOW', 10, 0), rule('higher-deny', 'DENY', 20, 1)], 'DENY'],
   ['EMERGENCY_HALT short-circuits', [rule('halt', 'EMERGENCY_HALT', 10, 0), rule('late-allow', 'ALLOW', 20, 3, 'critical')], 'EMERGENCY_HALT'],
   // --- v1.3 catch-all 语义（R1/R2）---
